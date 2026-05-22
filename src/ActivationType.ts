@@ -1,4 +1,3 @@
-// Copied from foundryvtt-lancer/enums, actual values get borked in foundry loading.
 import {LancerActor, type LancerMECH, type LancerPILOT} from "foundryvtt-lancer/actor/lancer-actor";
 import {ActionData} from "foundryvtt-lancer/models/bits/action";
 import {
@@ -11,6 +10,7 @@ import {
 import {imgs} from "./images.js";
 import {logInvalidItem} from "./log.js";
 
+// Copied from foundryvtt-lancer/enums, actual values get borked in foundry loading.
 export const ENTRY_TYPE = {
   CORE_BONUS: 'core_bonus',
   DEPLOYABLE: 'deployable',
