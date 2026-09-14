@@ -1,0 +1,7 @@
+# Ignore all files
+scripts/
+lib/
+node_modules/
+# Unless
+!src/
+!styles/

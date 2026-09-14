@@ -1,12 +1,18 @@
 {
   "name": "stylish-lancer-hud",
   "private": true,
-  "devDependencies": {
-    "@league-of-foundry-developers/foundry-vtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
-    "@typescript/native-preview": "^7.0.0-dev.20260421.2"
-  },
   "scripts": {
     "build": "tsgo -b",
-    "watch": "tsgo -w"
+    "watch": "tsgo -w",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@league-of-foundry-developers/foundry-vtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
+    "@typescript/native-preview": "^7.0.0-dev.20260421.2",
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0"
   }
 }

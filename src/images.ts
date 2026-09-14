@@ -1,4 +1,3 @@
-
 // Map to: systems/lancer/assets/icons/white
 const lancer_imgs_root = "systems/lancer/assets/icons/white/";
 const la_imgs_root = "modules/lancer-automations/icons/";
@@ -126,7 +125,7 @@ const lancer_imgs = {
   role_support: `${lancer_imgs_root}role_support.svg`,
   squad: `${lancer_imgs_root}squad.svg`,
   system: `${lancer_imgs_root}system.svg`,
-}
+};
 
 const la_imgs = {
   ammo: `${la_imgs_root}ammo-box.svg`,
@@ -198,9 +197,9 @@ const la_imgs = {
   underhand: `${la_imgs_root}underhand.svg`,
   up: `${la_imgs_root}up-card.svg`,
   vote: `${la_imgs_root}vote.svg`,
-}
+};
 
 export const imgs = {
   lancer: lancer_imgs,
-  la: la_imgs
-}
+  la: la_imgs,
+};

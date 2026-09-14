@@ -1,0 +1,377 @@
+{
+  "pilot": "Actor.9h8K0efG4ODR4cA4",
+  "overcharge": 1,
+  "repairs": {
+    "min": 0,
+    "max": 5,
+    "value": 5
+  },
+  "core_active": false,
+  "core_energy": 1,
+  "loadout": {
+    "frame": "Wrdgu5mcEd4Ze0Hn",
+    "weapon_mounts": [
+      {
+        "bracing": false,
+        "type": "Main/Aux",
+        "slots": [
+          {
+            "mod": null,
+            "weapon": "C59DRyC3PZpO0c5d",
+            "size": "Main"
+          },
+          {
+            "mod": null,
+            "weapon": "aXhPfa3oPDzjSo1S",
+            "size": "Auxiliary"
+          }
+        ]
+      }
+    ],
+    "systems": [
+      "K3wkR0U8Q2DPugsT",
+      "aZSYPGtlbLeOQRPM",
+      "oNJr0stuiNEQksOp",
+      "A4Pguiu1B48BghPX",
+      "ldBbrGSWqyw9obPu",
+      "qxqVuRujpqONjJ2c",
+      "9U8VFyYXhf4wL0I4",
+      "EotA8F8RXcQGJPBH"
+    ]
+  },
+  "meltdown_timer": null,
+  "notes": "",
+  "burn": 0,
+  "activations": 1,
+  "custom_counters": [],
+  "hp": {
+    "min": 0,
+    "max": 10,
+    "value": 4
+  },
+  "overshield": {
+    "min": 0,
+    "max": 14,
+    "value": 0
+  },
+  "inherited_effects": {
+    "from_uuid": "Actor.9h8K0efG4ODR4cA4",
+    "data": [
+      {
+        "name": "The Lesson of the Open Door",
+        "flags": {
+          "lancer": {
+            "target_type": "mech",
+            "ephemeral": true,
+            "deep_origin": "Actor.9h8K0efG4ODR4cA4.Item.WUWTmIp3xUl25yi0"
+          }
+        },
+        "changes": [
+          {
+            "mode": 2,
+            "value": "2",
+            "priority": 20,
+            "key": "system.save"
+          }
+        ],
+        "transfer": true,
+        "disabled": false,
+        "origin": "Actor.9h8K0efG4ODR4cA4",
+        "_id": null,
+        "img": null,
+        "type": "base",
+        "system": {},
+        "duration": {
+          "startTime": null,
+          "seconds": null,
+          "combat": null,
+          "rounds": null,
+          "turns": null,
+          "startRound": null,
+          "startTurn": null
+        },
+        "description": "",
+        "tint": "#ffffff",
+        "statuses": [],
+        "sort": 0,
+        "_stats": {
+          "coreVersion": "12.331",
+          "systemId": "lancer",
+          "systemVersion": "2.11.2",
+          "createdTime": null,
+          "modifiedTime": null,
+          "lastModifiedBy": null,
+          "compendiumSource": null,
+          "duplicateSource": null
+        }
+      },
+      {
+        "name": "Enhanced Systems Upgrade",
+        "flags": {
+          "lancer": {
+            "target_type": "mech",
+            "ephemeral": true,
+            "deep_origin": "Actor.9h8K0efG4ODR4cA4.Item.vDTUGH2oe4DprubU"
+          }
+        },
+        "changes": [
+          {
+            "mode": 2,
+            "value": "2",
+            "priority": 20,
+            "key": "system.loadout.sp.max"
+          }
+        ],
+        "transfer": true,
+        "disabled": false,
+        "origin": "Actor.9h8K0efG4ODR4cA4",
+        "_id": null,
+        "img": null,
+        "type": "base",
+        "system": {},
+        "duration": {
+          "startTime": null,
+          "seconds": null,
+          "combat": null,
+          "rounds": null,
+          "turns": null,
+          "startRound": null,
+          "startTurn": null
+        },
+        "description": "",
+        "tint": "#ffffff",
+        "statuses": [],
+        "sort": 0,
+        "_stats": {
+          "coreVersion": "12.331",
+          "systemId": "lancer",
+          "systemVersion": "2.11.2",
+          "createdTime": null,
+          "modifiedTime": null,
+          "lastModifiedBy": null,
+          "compendiumSource": null,
+          "duplicateSource": null
+        }
+      },
+      {
+        "name": "Pilot → Mech Bonuses",
+        "changes": [
+          {
+            "mode": 5,
+            "key": "system.hull",
+            "priority": 30,
+            "value": "4"
+          },
+          {
+            "mode": 2,
+            "key": "system.hp.max",
+            "priority": 30,
+            "value": "11"
+          },
+          {
+            "mode": 2,
+            "key": "system.repairs.max",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 5,
+            "key": "system.agi",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 2,
+            "key": "system.evasion",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 2,
+            "key": "system.speed",
+            "priority": 30,
+            "value": "1"
+          },
+          {
+            "mode": 5,
+            "key": "system.sys",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 2,
+            "key": "system.edef",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 2,
+            "key": "system.tech_attack",
+            "priority": 30,
+            "value": "2"
+          },
+          {
+            "mode": 2,
+            "key": "system.save",
+            "priority": 30,
+            "value": "3"
+          },
+          {
+            "mode": 2,
+            "key": "system.loadout.sp.max",
+            "priority": 30,
+            "value": "4"
+          },
+          {
+            "mode": 5,
+            "key": "system.eng",
+            "priority": 30,
+            "value": "0"
+          },
+          {
+            "mode": 2,
+            "key": "system.heat.max",
+            "priority": 30,
+            "value": "0"
+          },
+          {
+            "mode": 2,
+            "key": "system.loadout.limited_bonus",
+            "priority": 30,
+            "value": "0"
+          },
+          {
+            "mode": 5,
+            "key": "system.grit",
+            "priority": 30,
+            "value": "3"
+          },
+          {
+            "mode": 5,
+            "key": "system.level",
+            "priority": 30,
+            "value": "6"
+          }
+        ],
+        "img": "pc/Kalevi/Kalevi%20Gerundo%20-%20young.png",
+        "origin": "Actor.9h8K0efG4ODR4cA4",
+        "flags": {
+          "lancer": {
+            "target_type": "mech",
+            "ephemeral": true,
+            "deep_origin": "Actor.9h8K0efG4ODR4cA4"
+          }
+        },
+        "_id": null,
+        "type": "base",
+        "system": {},
+        "disabled": false,
+        "duration": {
+          "startTime": null,
+          "seconds": null,
+          "combat": null,
+          "rounds": null,
+          "turns": null,
+          "startRound": null,
+          "startTurn": null
+        },
+        "description": "",
+        "tint": "#ffffff",
+        "transfer": true,
+        "statuses": [],
+        "sort": 0,
+        "_stats": {
+          "coreVersion": "12.331",
+          "systemId": "lancer",
+          "systemVersion": "2.11.2",
+          "createdTime": null,
+          "modifiedTime": null,
+          "lastModifiedBy": null,
+          "compendiumSource": null,
+          "duplicateSource": null
+        }
+      },
+      {
+        "name": "Pilot → Deployable Bonuses",
+        "changes": [
+          {
+            "mode": 5,
+            "key": "system.grit",
+            "priority": 30,
+            "value": "3"
+          },
+          {
+            "mode": 5,
+            "key": "system.level",
+            "priority": 30,
+            "value": "6"
+          }
+        ],
+        "img": "pc/Kalevi/Kalevi%20Gerundo%20-%20young.png",
+        "origin": "Actor.9h8K0efG4ODR4cA4",
+        "flags": {
+          "lancer": {
+            "target_type": "deployable",
+            "ephemeral": true,
+            "deep_origin": "Actor.9h8K0efG4ODR4cA4"
+          }
+        },
+        "_id": null,
+        "type": "base",
+        "system": {},
+        "disabled": false,
+        "duration": {
+          "startTime": null,
+          "seconds": null,
+          "combat": null,
+          "rounds": null,
+          "turns": null,
+          "startRound": null,
+          "startTurn": null
+        },
+        "description": "",
+        "tint": "#ffffff",
+        "transfer": true,
+        "statuses": [],
+        "sort": 0,
+        "_stats": {
+          "coreVersion": "12.331",
+          "systemId": "lancer",
+          "systemVersion": "2.11.2",
+          "createdTime": null,
+          "modifiedTime": null,
+          "lastModifiedBy": null,
+          "compendiumSource": null,
+          "duplicateSource": null
+        }
+      }
+    ],
+    "visible": true
+  },
+  "action_tracker": {
+    "protocol": false,
+    "move": 0,
+    "full": false,
+    "quick": false,
+    "reaction": true,
+    "free": false,
+    "used_reactions": []
+  },
+  "heat": {
+    "min": 0,
+    "max": 6,
+    "value": 3
+  },
+  "stress": {
+    "min": 0,
+    "max": 1,
+    "value": 4
+  },
+  "structure": {
+    "min": 0,
+    "max": 1,
+    "value": 4
+  },
+  "lid": "72739eb1-1fb8-406f-9b66-6b81027899f1",
+  "infection": 0
+}

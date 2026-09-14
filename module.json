@@ -1,12 +1,12 @@
 {
   "id": "stylish-lancer-hud",
-  "title": "LANCER Stylish Actin HUD",
+  "title": "LANCER Stylish Action HUD",
   "description": "Make a SUH for my specific campaign, not very general purpose yet.",
   "version": "#{VERSION}#",
   "library": "false",
   "compatibility": {
     "minimum": 12,
-    "verified": 12
+    "verified": 13
   },
   "authors": [
     {
@@ -35,15 +35,9 @@
       }
     ]
   },
-  "esmodules": [
-    "scripts/LancerSystemAdapter.js",
-    "scripts/statuses.js"
-  ],
-  "styles": [
-    "styles/stylefix.css"
-  ],
-  "languages": [
-  ],
+  "esmodules": ["scripts/LancerSystemAdapter.js", "scripts/statuses.js"],
+  "styles": ["styles/stylefix.css"],
+  "languages": [],
   "url": "#{URL}#",
   "manifest": "#{MANIFEST}#",
   "download": "#{DOWNLOAD}#",

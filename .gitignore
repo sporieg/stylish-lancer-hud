@@ -10,6 +10,7 @@
 !.github/
 !lib/
 !/.gitignore
+!/.prettierignore
 !/.editorconfig
 !/LICENSE
 !/module.json
