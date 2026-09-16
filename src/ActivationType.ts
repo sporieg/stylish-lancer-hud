@@ -150,7 +150,7 @@ export type ActionItem = {
   item: LancerItem;
   action: Pick<ActionData, "activation">;
   // A path to reach back to your action on the item.
-  subMenuItem: SubMenuItem;
+  subMenuItem: SubMenuActionItem;
 };
 
 //Throw in a flatmap

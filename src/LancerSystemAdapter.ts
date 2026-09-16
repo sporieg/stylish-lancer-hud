@@ -1,10 +1,10 @@
-import type {
+import  {
   LancerActor,
   LancerMECH,
   LancerNPC,
   LancerPILOT,
 } from "foundryvtt-lancer/actor/lancer-actor";
-import type { LancerActiveEffect } from "foundryvtt-lancer/effects/lancer-active-effect";
+import  { LancerActiveEffect } from "foundryvtt-lancer/effects/lancer-active-effect";
 import {
   LancerItem,
   LancerMECH_WEAPON,
@@ -30,6 +30,7 @@ import {
 } from "./ActivationType.js";
 import { SimpleActionMacros } from "./SimpleActions.js";
 import { pilotForMech } from "./HudActorManagement.js";
+import {Array} from "@league-of-foundry-developers/foundry-vtt-types/configuration";
 
 // my-system-adapter.js
 const STAT_PATHS = {
@@ -43,7 +44,7 @@ const STAT_PATHS = {
 const isInvade = (a: Pick<ActionData, "activation">) => a.activation === "Invade";
 
 // Lancer icons at: https://github.com/massif-press/compcon/blob/master/src/assets/glyphs/glyphs.css
-let macroInvade: SubMenuItem = {
+let macroInvade: SubMenuActionItem = {
   id: "macro-o3nZI3EidYMVc9UX",
   name: "Invasion Flow",
   img: imgs.lancer.tech_quick,
@@ -51,7 +52,7 @@ let macroInvade: SubMenuItem = {
   description: "Trigger the invasion flow chart",
 };
 
-let missionRest: SubMenuItem = {
+let missionRest: SubMenuActionItem = {
   id: "macro-MiJ9OGiYsgtHulQQ",
   name: "Rest",
   img: imgs.lancer.repair,
@@ -327,7 +328,15 @@ function activateCoreSystem(actor: LancerActor, actionId: string) {
   return item.beginCoreActiveFlow(dataPath);
 }
 
-type _SubMenuData = Omit<SubMenuData, "title">;
+type _SubMenuData = {
+  theme?: string;
+  hasTabs?: boolean;
+  hasSubTabs?: boolean;
+  items: FlatSubMenuItems | TabbedSubMenuItems | SidebarSubMenuItems;
+  tabLabels?: Record<string, string>;
+  tabTooltips?: Record<string, string>;
+  subTabLabels?: Record<string, Record<string, string>>;
+}
 
 function fixupSmItems(sm: SubMenuData): SubMenuData {
   // Sub Men Items that are macros have a hidden property, globalFlavor.  Set that here from the description
@@ -360,9 +369,9 @@ function fixupSmItems(sm: SubMenuData): SubMenuData {
 Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
   debug("Registering Lancer System Adapter");
 
-  class LancerSystemAdapter {
-    private systemId: string = "lancer-system";
-    private base: LancerSystemAdapter;
+  class LancerSystemAdapter implements SystemAdapterInstance<LancerActor> {
+    systemId: string = "lancer-system";
+    private base: SystemAdapterInstance<LancerActor>;
 
     constructor() {
       // Close enough lol
@@ -377,7 +386,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return game.modules.get("lancer-automations").api as LancerAutomationsAPI;
     }
 
-    getStats(actor: LancerActor, configAttributes: any) {
+    getStats(actor: LancerActor, configAttributes: AttributeConfig[]) {
       return this.base.getStats(actor, configAttributes).map((a) => {
         if (/^system\.(hull|agi|sys|eng)$/.test(a.path)) {
           a.max = 6;
@@ -387,15 +396,14 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     getConditions(actor: LancerActor) {
-      // @ts-ignore
       return (actor.temporaryEffects || [])
         .filter((e) => e.img)
-        .map((e) => {
+        .map<ConditionData>((e) => {
           return {
             id: e.id || e.name,
             src: e.img,
             name: e.name || "Unknown",
-            // value: e.value ?? null,
+            value: null,
           };
         });
     }
@@ -415,7 +423,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       }
     }
 
-    rollStat(actor: LancerActor, path: string, event: any) {
+    rollStat(actor: LancerActor, path: string, _event: Event) {
       if (this.isStatRollable(path)) {
         return actor.beginStatFlow(path);
       }
@@ -734,16 +742,30 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       let pInvades = (await getActorActionItems(pilotForMech(actor)))
         .filter((a) => isInvade(a.action))
         .map((a) => a.subMenuItem);
-      let options = [
+      let options: SubMenuActionItem[] = [
         ...systemInvades,
         ...pInvades,
         {
           id: "fragment-signal",
           name: "Fragment Signal [Default]",
-          description:
-            "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
+          description: "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
         },
       ];
+      const items: TabbedSubMenuItems = {
+        flow: [
+          macroInvade,
+          {
+            id: "basic-tech-attack",
+            name: "Basic Tech",
+            description: "You do a basic tech attack against edef.",
+          },
+        ],
+        full: options.map<SubMenuActionItem>((o) => ({
+          id: o.id,
+          name: o.name,
+          description: o.description,
+        })),
+      };
       return {
         title: "Invade Options",
         hasTabs: true,
@@ -751,21 +773,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           flow: "Invade Flow",
           full: "All Invade Options",
         },
-        items: {
-          flow: [
-            macroInvade,
-            {
-              id: "basic-tech-attack",
-              name: "Basic Tech",
-              description: "You do a basic tech attack against edef.",
-            },
-          ],
-          full: options.map((o) => ({
-            id: o.id,
-            name: o.name,
-            description: o.description,
-          })),
-        },
+        items
       };
     }
 
@@ -1063,6 +1071,14 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         // Actor talents too.
       }
       return paths;
+    }
+
+    getDefaultStatusEffects(): StatusEffectConfig[] {
+      return [];
+    }
+
+    resolveQuickSlotData(actor: LancerActor, itemId: string): QuickSlotData | null {
+      return undefined;
     }
   }
 
