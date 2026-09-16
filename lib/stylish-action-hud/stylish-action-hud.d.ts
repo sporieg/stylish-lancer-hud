@@ -179,7 +179,26 @@ interface SystemAdapterInstance<T> {
   getDefaultLayout?(): LayoutConfig[];
 }
 
-type SystemAdapterClass = new () => SystemAdapterInstance;
+type SystemAdapterClass<T> = new () => SystemAdapterInstance<T>;
+
+declare abstract class BaseSystemAdapter implements SystemAdapterInstance {
+  systemId: string;
+  getStats(actor: unknown, configAttributes: AttributeConfig[]): HudStat[];
+  updateAttribute(actor: unknown, path: string, input: string): Promise<void>;
+  getConditions(actor: unknown): ConditionData[];
+  removeCondition(actor: unknown, conditionId: string): Promise<void>;
+  resolveQuickSlotData(actor: unknown, itemId: string): QuickSlotData | null;
+  rollStat(actor: unknown, path: string, event: Event): MaybePromise<unknown> | null;
+  isStatRollable(path: string): boolean;
+  getActionCategories(actor: unknown): ActionMenuCategory[];
+  getSubMenuData(actor: unknown, categoryId: string): MaybePromise<SubMenuData | null>;
+  executeAction(actor: unknown, actionId: string): Promise<unknown>;
+  useItem(actor: unknown, itemId: string, event?: Event | null): Promise<unknown>;
+  getTrackableAttributes(actor: unknown): TrackableAttribute[];
+  getDefaultAttributes(): AttributeConfig[];
+  getDefaultStatusEffects(): StatusEffectConfig[];
+  getDefaultLayout?(): LayoutConfig[];
+}
 type SystemAdapterFactory = () => SystemAdapterInstance;
 type SystemAdapterRegistration =
   | SystemAdapterClass
@@ -439,7 +458,7 @@ interface ImportResult {
 }
 
 interface StylishActionHudAPI {
-  BaseSystemAdapter: SystemAdapterClass;
+  BaseSystemAdapter: typeof BaseSystemAdapter;
 
   registerSystemAdapter(
     systemId: string,

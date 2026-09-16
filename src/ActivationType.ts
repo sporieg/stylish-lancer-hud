@@ -413,7 +413,7 @@ export function bondSubMenuData(bond: LancerBOND): SubMenuItem[] {
  *
  * e.g.  getActionActionItem(actor).filter(byActionType("Protocol"))
  */
-export async function getActorActionItems(actor?: LancerActor) {
+export function getActorActionItems(actor?: LancerActor) {
   // NPCS have other tags, we will need to reverse this out maybe?
   // const tagLid = ACTIVATION_TAG_MAP[activationType];
   // We need an item/action/index ste
@@ -422,8 +422,7 @@ export async function getActorActionItems(actor?: LancerActor) {
   if (!actor) return [];
   let loadOut = actor.loadoutHelper.listLoadout();
   return (
-    await Promise.all(
-      loadOut.map(async (item): Promise<ActionItem[]> => {
+      loadOut.map((item): ActionItem[] => {
         const itemId = item.id;
         const actions = la().getActorActions(actor) as ActionData[];
         //la().getItemDeployables()
@@ -506,7 +505,6 @@ export async function getActorActionItems(actor?: LancerActor) {
           }
         }
         return options;
-      }),
-    )
+      })
   ).flatMap((a) => a);
 }
