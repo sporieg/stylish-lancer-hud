@@ -1,15 +1,12 @@
-import  {
+import {
   LancerActor,
   LancerMECH,
   LancerNPC,
   LancerPILOT,
 } from "foundryvtt-lancer/actor/lancer-actor";
-import  { LancerActiveEffect } from "foundryvtt-lancer/effects/lancer-active-effect";
 import {
   LancerItem,
-  LancerMECH_WEAPON,
   LancerSKILL,
-  LancerWEAPON_MOD,
 } from "foundryvtt-lancer/item/lancer-item";
 import type { ActionData } from "foundryvtt-lancer/models/bits/action";
 import { debug } from "./log.js";
@@ -326,7 +323,7 @@ type _SubMenuData = {
   tabLabels?: Record<string, string>;
   tabTooltips?: Record<string, string>;
   subTabLabels?: Record<string, Record<string, string>>;
-}
+};
 
 function fixupSmItems(sm: SubMenuData): SubMenuData {
   // Sub Men Items that are macros have a hidden property, globalFlavor.  Set that here from the description
@@ -392,7 +389,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           };
         });
     }
-
 
     /*override async removeCondition(actor: LancerActor, conditionId: string) {
       // @ts-ignore
@@ -515,10 +511,9 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       });
       if (actor.inCombat && (actor.is_mech() || actor.is_npc())) {
         // Is it our turn?
-        // @ts-ignore this is if you set the config globally, why though?  You don't have actor method access then, just macro.
         const myTurn = game.combat.combatants.find(
           (c) => c.actor.id === actor.id,
-        ) as LancerCombatant;
+        ) as unknown as LancerCombatant;
         if (myTurn && myTurn.activations.value > 0) {
           basicActions.push(Groups.activate);
         }
@@ -578,11 +573,11 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           return { title: "mech fail", items: [] };
         case Groups.invade.systemId:
           if (actor.is_mech()) {
-            return { ...(this._buildInvades(actor)), title: menuData.label };
+            return { ...this._buildInvades(actor), title: menuData.label };
           }
           return { title: "mech fail", items: [] };
         case Groups.tech.systemId:
-          return { ...(this._buildTechActivations(actor)), title: menuData.label };
+          return { ...this._buildTechActivations(actor), title: menuData.label };
         case Groups.utility.systemId:
           return { ...this._buildUtility(actor), title: menuData.label };
         case Groups.compconFlow.systemId:
@@ -718,10 +713,10 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     _buildInvades(actor: LancerMECH): SubMenuData {
-      const systemInvades = (getActorActionItems(actor))
+      const systemInvades = getActorActionItems(actor)
         .filter((a) => isInvade(a.action))
         .map((a) => a.subMenuItem);
-      let pInvades = (getActorActionItems(pilotForMech(actor)))
+      let pInvades = getActorActionItems(pilotForMech(actor))
         .filter((a) => isInvade(a.action))
         .map((a) => a.subMenuItem);
       let options: SubMenuActionItem[] = [
@@ -730,7 +725,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         {
           id: "fragment-signal",
           name: "Fragment Signal [Default]",
-          description: "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
+          description:
+            "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
         },
       ];
       const items: TabbedSubMenuItems = {
@@ -755,7 +751,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           flow: "Invade Flow",
           full: "All Invade Options",
         },
-        items
+        items,
       };
     }
 

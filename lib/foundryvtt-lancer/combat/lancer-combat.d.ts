@@ -80,6 +80,9 @@ interface Activations {
     value?: number;
 }
 declare global {
+    interface DocumentClassConfig {
+        Combatant: typeof LancerCombatant;
+    }
     interface FlagConfig {
         Combatant: {
             lancer: {

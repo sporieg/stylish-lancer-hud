@@ -54,14 +54,14 @@ export const ENTRY_TYPE_IMG_MAP = {
   WEAPON_MOD: imgs.lancer.mech_weapon,
   MECH_SYSTEM: imgs.lancer.mech_system,
   MECH_WEAPON: imgs.lancer.mech_weapon,
-  ORGANIZATION: imgs.la.angel,
+  ORGANIZATION: imgs.la["angel-outfit"],
   PILOT_ARMOR: imgs.lancer.pilot,
   PILOT_GEAR: imgs.lancer.pilot,
   PILOT_WEAPON: imgs.lancer.pilot,
   PILOT: imgs.lancer.pilot,
   RESERVE: imgs.lancer.reserve_tac,
   SKILL: imgs.lancer.skill,
-  STATUS: imgs.la.medical,
+  STATUS: imgs.la["medical-pack"],
   TALENT: imgs.lancer.talent,
   BOND: imgs.lancer.bond,
 };
@@ -191,32 +191,6 @@ export function isUsableItem(item: any) {
   return true;
 }
 
-// Map everything to a light image, they are dark by default.
-// Once again, enum in Lancer, but enums cannot be used with eraseable syntax
-/*const enum EntryTypeImage {
-   "core_bonus",
-   "deployable",
-   "frame",
-   "mech", // Mech actors
-   "license",
-   "npc",
-   "npc_class",
-   "npc_template",
-   "npc_feature",
-   "weapon_mod",
-   "mech_system",
-   "mech_weapon",
-   "organization",
-   "pilot_armor",
-   "pilot_gear",
-   "pilot_weapon",
-   "pilot",
-   "reserve",
-   "skill",
-   "status",
-   "talent",
-   "bond",
-}*/
 
 /**
  * I could put the help on system, but I think there are enough potential edge cases
@@ -421,90 +395,87 @@ export function getActorActionItems(actor?: LancerActor) {
   //TODO: Deployable e.g.  A mine in addition to grenade.
   if (!actor) return [];
   let loadOut = actor.loadoutHelper.listLoadout();
-  return (
-      loadOut.map((item): ActionItem[] => {
-        const itemId = item.id;
-        const actions = la().getActorActions(actor) as ActionData[];
-        //la().getItemDeployables()
-        const acts = la().getItemActions(item);
-        const options: ActionItem[] = [];
-        if (item.is_frame()) {
-          options.push(...coreSystem(item));
-        }
-        // Frames and items with deploybables can apply.
+  return loadOut
+    .map((item): ActionItem[] => {
+      const itemId = item.id;
+      const actions = la().getActorActions(actor) as ActionData[];
+      //la().getItemDeployables()
+      const acts = la().getItemActions(item);
+      const options: ActionItem[] = [];
+      if (item.is_frame()) {
+        options.push(...coreSystem(item));
+      }
+      // Frames and items with deploybables can apply.
 
-        //const tags = await la().getItemTags_WithBonus(item, actor);
-        const { cost, description } = tagsCostAndDescription(item);
-        const usable = isUsableItem(item);
-        //Try and match to a light theme image if one matches well.
-        let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
-        const name = usable
-          ? item.name
-          : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
+      //const tags = await la().getItemTags_WithBonus(item, actor);
+      const { cost, description } = tagsCostAndDescription(item);
+      const usable = isUsableItem(item);
+      //Try and match to a light theme image if one matches well.
+      let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
+      const name = usable
+        ? item.name
+        : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
 
-        if (
-          ("deployables" in item.system && item.system.deployables.length > 0) ||
-          item.is_frame()
-        ) {
-          //item.system.deployables[0]
-          img = imgs.lancer.deployable;
-          const d = la()
-            .getItemDeployables(item, actor)
-            .map((d) => ({
+      if (("deployables" in item.system && item.system.deployables.length > 0) || item.is_frame()) {
+        //item.system.deployables[0]
+        img = imgs.lancer.deployable;
+        const d = la()
+          .getItemDeployables(item, actor)
+          .map((d) => ({
+            item,
+            action: {
+              activation: "Quick",
+            },
+            subMenuItem: {
+              id: "",
+              name: name,
+            },
+          }));
+        // Just hit the deployable button please.  To find mines I gotta go into the compendiums.
+      }
+      if (acts.length > 0) {
+        options.push(
+          ...(acts as ActionData[]).map((action, idx) => {
+            let fmtName = `${action.name} [${item.name}]`;
+            if (action.name === "Action") {
+              fmtName = item.name;
+            }
+            const name = (item.system as any).destroyed
+              ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
+              : fmtName;
+            return {
               item,
-              action: {
-                activation: "Quick",
-              },
+              action,
               subMenuItem: {
-                id: "",
-                name: name,
+                id: itemActionId(itemId, idx, "system.actions"),
+                name,
+                img,
+                description: action.detail,
+                cost,
+                isExhausted: !usable,
+                uses: item.isLimited() && item.system.uses,
               },
-            }));
-          // Just hit the deployable button please.  To find mines I gotta go into the compendiums.
+            };
+          }),
+        );
+      } else if (item.is_npc_feature()) {
+        const tg = item.system.tags.find((t) => actionTags.includes(t.val));
+        const activation = INVERTED_ACTIVATION_TAG_MAP[tg?.val as ActivationValue];
+        if (activation) {
+          options.push({
+            item,
+            action: {
+              activation: activation as any,
+            },
+            subMenuItem: {
+              id: item.id,
+              name: item.name,
+              description: item.system.effect,
+            },
+          });
         }
-        if (acts.length > 0) {
-          options.push(
-            ...(acts as ActionData[]).map((action, idx) => {
-              let fmtName = `${action.name} [${item.name}]`;
-              if (action.name === "Action") {
-                fmtName = item.name;
-              }
-              const name = (item.system as any).destroyed
-                ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
-                : fmtName;
-              return {
-                item,
-                action,
-                subMenuItem: {
-                  id: itemActionId(itemId, idx, "system.actions"),
-                  name,
-                  img,
-                  description: action.detail,
-                  cost,
-                  isExhausted: !usable,
-                  uses: item.isLimited() && item.system.uses,
-                },
-              };
-            }),
-          );
-        } else if (item.is_npc_feature()) {
-          const tg = item.system.tags.find((t) => actionTags.includes(t.val));
-          const activation = INVERTED_ACTIVATION_TAG_MAP[tg?.val as ActivationValue];
-          if (activation) {
-            options.push({
-              item,
-              action: {
-                activation: activation as any,
-              },
-              subMenuItem: {
-                id: item.id,
-                name: item.name,
-                description: item.system.effect,
-              },
-            });
-          }
-        }
-        return options;
-      })
-  ).flatMap((a) => a);
+      }
+      return options;
+    })
+    .flatMap((a) => a);
 }

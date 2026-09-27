@@ -9,7 +9,7 @@
     /* Modules */
     "module": "esnext",
     "sourceMap": false,
-    "types": ["@league-of-foundry-developers/foundry-vtt-types", "jquery"],
+    "types": ["fvtt-types", "jquery"],
     "forceConsistentCasingInFileNames": true,
     /* Type Checking */
     "strict": true,

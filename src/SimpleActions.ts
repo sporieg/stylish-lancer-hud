@@ -1,31 +1,32 @@
 import { ActivationType } from "./ActivationType.js";
+import { imgs } from "./images.js";
 
 export const SimpleActionMacros = {
   Reactor_Explosion: {
     id: "macro-42AtSqvHlbdrBumG",
     name: "Reactor_Explosion",
-    img: "modules/lancer-automations/icons/mushroom-cloud.svg",
+    img: imgs.la["mushroom-cloud"],
     cost: ActivationType.None,
     description: "",
   },
   Interact: {
     id: "macro-5eUNhWdKGguZo6KX",
     name: "Interact",
-    img: "modules/lancer-automations/icons/click.svg",
+    img: imgs.la.click,
     cost: ActivationType.None,
     description: "",
   },
   Throw_Weapon: {
     id: "macro-6WdpcfoLGYv6TBgz",
     name: "Throw_Weapon",
-    img: "modules/lancer-automations/icons/throw.svg",
+    img: imgs.la["throw"],
     cost: ActivationType.None,
     description: "",
   },
   Lock_On: {
     id: "macro-oryUerpTOBkzCnFv",
     name: "Lock On",
-    cost: '<i class="mdi mdi-hexagon-slice-3" style="font-size:1.15em;margin-right:5px;vertical-align:middle;flex-shrink:0;"></i>',
+    cost: ActivationType.Quick,
     description:
       "Choose a character within SENSORS and line of sight. They gain the LOCK ON condition. Any character making an attack against a character with LOCK ON may choose to gain +1 Accuracy on that attack and then clear the LOCK ON condition after that attack resolves.",
     img: "systems/lancer/assets/icons/white/condition_lockon.svg",
@@ -40,14 +41,14 @@ export const SimpleActionMacros = {
   Knockback: {
     id: "macro-FIvBse85JC29PuD2",
     name: "Knockback",
-    img: "modules/lancer-automations/icons/push.svg",
+    img: imgs.la["push"],
     cost: ActivationType.None,
     description: "",
   },
   "End_Active Item": {
     id: "macro-GXFvnEStTZPUeIw7",
     name: "End_Active_Item",
-    img: "modules/lancer-automations/icons/pause-button.svg",
+    img: imgs.la["pause-button"],
     cost: ActivationType.None,
     description: "",
   },
@@ -68,29 +69,29 @@ export const SimpleActionMacros = {
   Ram: {
     id: "macro-Jzjjxi8hOZMTQk7e",
     name: "Ram",
-    img: "modules/lancer-automations/icons/ram.svg",
+    img: imgs.la["ram"],
     cost: ActivationType.None,
     description: "",
   },
   Choice_Menu: {
     id: "macro-VO5nTNciwFctDznc",
     name: "Choice_Menu",
-    img: "modules/lancer-automations/icons/vote.svg",
+    img: imgs.la["vote"],
     cost: ActivationType.None,
     description: "",
   },
   Eject: {
     id: "macro-LIuBoGRinNIYwM7v",
     name: "Eject",
-    cost: '<i class="mdi mdi-hexagon-slice-3" style="font-size:1.15em;margin-right:5px;vertical-align:middle;flex-shrink:0;"></i>',
+    cost: ActivationType.Quick,
     description:
       "EJECT as a quick action, flying 6 spaces in the direction of your choice; however, this is a single-use system for emergency use only – it leaves your mech IMPAIRED. Your mech remains IMPAIRED and you cannot EJECT again until your next FULL REPAIR.",
-    img: "modules/lancer-automations/icons/parachute.svg",
+    img: imgs.la["parachute"],
   },
   Skirmish: {
     id: "macro-LJGEwce2QZfqBAiE",
     name: "Skirmish",
-    img: "modules/lancer-automations/icons/skirmish.svg",
+    img: imgs.la["skirmish"],
     cost: ActivationType.Quick,
     description:
       "When you SKIRMISH, you attack with a single weapon.<br/>" +
@@ -110,12 +111,12 @@ export const SimpleActionMacros = {
     name: "Disengage",
     cost: ActivationType.Full,
     description: "Move from engagement and avoid all reactions",
-    img: "modules/lancer-automations/icons/disengage.svg",
+    img: imgs.la["disengage"],
   },
   "Reload_One Weapon": {
     id: "macro-Rw7qhTO7Uet06lsr",
     name: "Reload_One_Weapon",
-    img: "modules/lancer-automations/icons/reload.svg",
+    img: imgs.la["reload"],
     cost: ActivationType.None,
     description: "",
   },
@@ -125,19 +126,19 @@ export const SimpleActionMacros = {
     cost: ActivationType.Quick,
     description:
       "To SEARCH in a mech, choose a character within your SENSORS that you suspect is HIDDEN and make a contested SYSTEMS check against their AGILITY. To SEARCH as a pilot on foot, make a contested skill check, adding bonuses from triggers as normal. This can be used to reveal characters within RANGE 5. Once a HIDDEN character has been found using SEARCH, they immediately lose HIDDEN and can be located again by any character.",
-    img: "modules/lancer-automations/icons/search.svg",
+    img: imgs.la["search"],
   },
   Handle: {
     id: "macro-U3rlQUisrQ1hTwBo",
     name: "Handle",
-    img: "modules/lancer-automations/icons/hand-truck.svg",
+    img: imgs.la["hand-truck"],
     cost: ActivationType.None,
     description: "",
   },
   Aid: {
     id: "macro-URhRNebzYJuWJKp8",
     name: "Aid",
-    img: "modules/lancer-automations/icons/medical-pack.svg",
+    img: imgs.la["medical-pack"],
     cost: ActivationType.None,
     description: "",
   },
@@ -159,7 +160,7 @@ export const SimpleActionMacros = {
   Barrage: {
     id: "macro-ZuOrSrPrg767I1eR",
     name: "Barrage",
-    img: "modules/lancer-automations/icons/barrage.svg",
+    img: imgs.la["barrage"],
     cost: ActivationType.Full,
     description:
       "When you BARRAGE, you attack with two weapons, or with one SUPERHEAVY weapon.<br/>" +
@@ -173,26 +174,26 @@ export const SimpleActionMacros = {
     cost: ActivationType.Full,
     description:
       "When you DISMOUNT, you climb off of a mech. You can DISMOUNT as a full action. When you DISMOUNT, you are placed in an adjacent space – if there are no free spaces, you cannot DISMOUNT. Additionally, you can also DISMOUNT willing allied mechs or vehicles you have MOUNTED.",
-    img: "modules/lancer-automations/icons/dismount.svg",
+    img: imgs.la["dismount"],
   },
   Squeeze: {
     id: "macro-cFwOkjJW45AeEWxv",
     name: "Squeeze",
-    img: "modules/lancer-automations/icons/contract.svg",
+    img: imgs.la["contract"],
     cost: ActivationType.None,
     description: "",
   },
   Reinforcement: {
     id: "macro-dbOhbkignU6Ldmqo",
     name: "Reinforcement",
-    img: "modules/lancer-automations/icons/rally-the-troops.svg",
+    img: imgs.la["rally-the-troops"],
     cost: ActivationType.None,
     description: "",
   },
   Pickup_Weapon: {
     id: "macro-fEyqaIxJ2zrQBvED",
     name: "Pickup_Weapon",
-    img: "modules/lancer-automations/icons/pickup.svg",
+    img: imgs.la["pickup"],
     cost: ActivationType.None,
     description: "",
   },
@@ -202,19 +203,19 @@ export const SimpleActionMacros = {
     cost: '<i class="cci cci-reaction" style="font-size:1.15em;margin-right:5px;vertical-align:middle;flex-shrink:0;"></i>',
     description:
       "You count as having RESISTANCE to all damage, burn, and heat from the triggering attack, and until the end of your next turn, all other attacks against you are made at +1 difficulty. Due to the stress of bracing, you cannot take reactions until the end of your next turn and on that turn, you can only take one quick action – you cannot OVERCHARGE, move normally, take full actions, or take free actions.",
-    img: "modules/lancer-automations/icons/brace.svg",
+    img: imgs.la["brace"],
   },
   Scan: {
     id: "macro-g7ydDbpR5frMbd4x",
     name: "Scan",
-    img: "modules/lancer-automations/icons/radar-sweep.svg",
+    img: imgs.la["radar-sweep"],
     cost: ActivationType.Quick,
     description: "",
   },
   Reactor_Meltdown: {
     id: "macro-gbwpEEiRMKAO99DT",
     name: "Reactor_Meltdown",
-    img: "modules/lancer-automations/icons/time-bomb.svg",
+    img: imgs.la["time-bomb"],
     cost: ActivationType.None,
     description: "",
   },
@@ -224,7 +225,7 @@ export const SimpleActionMacros = {
     cost: ActivationType.Full,
     description:
       "You can BOOT UP a mech that you are piloting as a full action, clearing SHUT DOWN and restoring your mech to a powered state.",
-    img: "modules/lancer-automations/icons/boot.svg",
+    img: imgs.la["boot"],
   },
   Fragment_Signal: {
     id: "macro-pzXWRjBIZ0zUETKr",
@@ -244,7 +245,7 @@ export const SimpleActionMacros = {
   Grapple_Choice: {
     id: "macro-vHeXwtAP3DwOA144",
     name: "Grapple_Choice",
-    img: "modules/lancer-automations/icons/grappling.svg",
+    img: imgs.la["grappling"],
     cost: ActivationType.None,
     description: "",
   },
