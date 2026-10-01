@@ -411,7 +411,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       if(base) {
         return base;
       }
-      const action = actions[itemId];
+      const action = Object.values(actions).find(a => a.id === itemId);
       if(action) {
         return action;
       }
