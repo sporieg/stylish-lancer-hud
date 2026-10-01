@@ -134,6 +134,14 @@ export function itemActionId(itemId: string, idx: number, path: string = "system
   return itemActionPath(itemId, `${path}.${idx}`);
 }
 
+
+
+/**
+ * Gets a complex activation from an actionId route.
+ * Returns the item + path pair you could use later to target a specific activation on the item.
+ * @param actor
+ * @param actionId
+ */
 export function getItem(actor: LancerActor, actionId: string): [LancerItem, string] {
   const activationParts = actionId.split(ID_DELIMITER);
   const itemId = activationParts[0];
@@ -224,12 +232,6 @@ export function tagsCostAndDescription(value: LancerItem) {
   };
 }
 
-function itemDefault(item: LancerItem): Partial<SubMenuActionItem> {
-  return {
-    favoritable: false,
-    isPersonal: true,
-  }
-}
 
 // Frames are intrinsically special and contain whole trees of actions.
 function coreSystem(item: LancerFRAME): ActionItem[] {
@@ -241,7 +243,6 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
       activation: core_system.activation,
     },
     subMenuItem: {
-      ...itemDefault(item),
       id: itemActionPath(itemId, "system.core_system"),
       img: imgs.lancer.corepower,
       name: core_system.active_name,
@@ -262,7 +263,6 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
     item,
     action,
     subMenuItem: {
-      ...itemDefault(item),
       id: itemActionId(itemId, idx, "system.core_system.active_actions"),
       img: imgs.lancer.mech,
       name: action.name,
@@ -274,7 +274,6 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
       item,
       action,
       subMenuItem: {
-        ...itemDefault(item),
         id: itemActionPath(itemId, `system.traits.${idx}.actions.${adx}`),
         img: imgs.lancer.mech,
         name: p.name,
@@ -364,6 +363,7 @@ export function weaponsByMount(actor: LancerMECH): SubMenuItem[] {
  */
 export function itemSubMenuData(item: LancerItem): SubMenuItem {
   return {
+    favoritable: true,
     id: item.id,
     name: item.name,
     img: ENTRY_TYPE_IMG_MAP[item.type],

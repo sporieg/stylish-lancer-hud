@@ -125,8 +125,7 @@ const Groups = {
     systemId: "statuses-and-conditions",
     icon: "cci ",
     type: "submenu",
-  },
-  sheet: { id: "sheet", label: "Sheet", icon: "fa-solid fa-id-card", type: "sheet" },
+  }
 } satisfies Record<string, ActionMenuCategory>;
 // In order to favorite, all non-item ids will need to start with macro-
 type ActionMap = Record<string, SubMenuItem>;
@@ -334,6 +333,17 @@ function fixupSmItems(sm: SubMenuData): SubMenuData {
   return sm;
 }
 
+// Native equiv for lodash get.
+const get = (obj, path, defaultValue = undefined) => {
+  const travel = regexp =>
+    String.prototype.split
+      .call(path, regexp)
+      .filter(Boolean)
+      .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
+  const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
+  return result === undefined || result === obj ? defaultValue : result;
+};
+
 /**
  * Categories
  *
@@ -381,17 +391,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         });
     }
 
-    /*override async removeCondition(actor: LancerActor, conditionId: string) {
-      // @ts-ignore
-      const effect: LancerActiveEffect = actor.effects.find(
-        // @ts-ignore
-        (e: LancerActiveEffect) => e.id === conditionId || e.name === conditionId,
-      );
-      if (effect) {
-        await effect.delete();
-      }
-    }*/
-
     override rollStat(actor: LancerActor, path: string, _event: Event) {
       if (this.isStatRollable(path)) {
         return actor.beginStatFlow(path);
@@ -405,6 +404,27 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
 
     override isStatRollable(path: string) {
       return /^system\.(hull|agi|sys|eng|grit)$/.test(path);
+    }
+
+    override resolveQuickSlotData(actor: LancerActor, itemId: string): QuickSlotData {
+      const base = super.resolveQuickSlotData(actor, itemId);
+      if(base) {
+        return base;
+      }
+      const action = actions[itemId];
+      if(action) {
+        return action;
+      }
+      const [embeddedItemAction, path] = getItem(actor, itemId);
+      let activ: ActionData | undefined = get(embeddedItemAction, path);
+      if(embeddedItemAction) {
+        return {
+          name: activ?.name ?? embeddedItemAction.name,
+          // I want the action name, imm,
+          img: embeddedItemAction.img
+        }
+      }
+      return null;
     }
 
     override async useItem(actor: LancerActor, itemId: string, _event = null) {
@@ -440,9 +460,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         ui.notifications?.warn(`Item not found: ${itemId}`);
         return;
       }
-
-      /*if (typeof item.use === "function") return item.use();
-      if (typeof item.roll === "function") return item.roll();*/
 
       if (item.is_weapon()) return item.beginWeaponAttackFlow();
       if (item.is_weapon_mod()) return item.beginActivationFlow();
@@ -512,7 +529,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       if (customized?.length > 0) {
         basicActions.push(...customized);
       }
-      basicActions.push(Groups.sheet);
       return basicActions;
     }
 
@@ -686,13 +702,20 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     _buildWeapons(actor: LancerMECH): _SubMenuData {
       let weaponItems = weaponsByMount(actor);
       let tabLabels = {
-        basic: "Basic",
-        attack: "Attack",
+        attack: "Attacks",
         mounts: "Mounts",
       };
       let items = {
-        basic: [actions.basic_attack, actions.basic_ram, actions.basic_grapple],
-        attack: [actions.skirmish, actions.barrage],
+        attack: [
+          actions.skirmish,
+          actions.barrage,
+          {
+            isHeader: true,
+            name: "Basic Attacks"
+          } as SubMenuHeaderItem,
+          actions.basic_attack,
+          actions.basic_ram,
+          actions.basic_grapple],
         mounts: weaponItems,
       };
       return {
