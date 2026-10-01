@@ -224,6 +224,13 @@ export function tagsCostAndDescription(value: LancerItem) {
   };
 }
 
+function itemDefault(item: LancerItem): Partial<SubMenuActionItem> {
+  return {
+    favoritable: false,
+    isPersonal: true,
+  }
+}
+
 // Frames are intrinsically special and contain whole trees of actions.
 function coreSystem(item: LancerFRAME): ActionItem[] {
   const itemId = item.id;
@@ -234,6 +241,7 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
       activation: core_system.activation,
     },
     subMenuItem: {
+      ...itemDefault(item),
       id: itemActionPath(itemId, "system.core_system"),
       img: imgs.lancer.corepower,
       name: core_system.active_name,
@@ -254,6 +262,7 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
     item,
     action,
     subMenuItem: {
+      ...itemDefault(item),
       id: itemActionId(itemId, idx, "system.core_system.active_actions"),
       img: imgs.lancer.mech,
       name: action.name,
@@ -265,6 +274,7 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
       item,
       action,
       subMenuItem: {
+        ...itemDefault(item),
         id: itemActionPath(itemId, `system.traits.${idx}.actions.${adx}`),
         img: imgs.lancer.mech,
         name: p.name,
@@ -387,7 +397,7 @@ export function bondSubMenuData(bond: LancerBOND): SubMenuItem[] {
  *
  * e.g.  getActionActionItem(actor).filter(byActionType("Protocol"))
  */
-export function getActorActionItems(actor?: LancerActor) {
+export function getActorActionItems(actor?: LancerActor): ActionItem[] {
   // NPCS have other tags, we will need to reverse this out maybe?
   // const tagLid = ACTIVATION_TAG_MAP[activationType];
   // We need an item/action/index ste
@@ -396,10 +406,8 @@ export function getActorActionItems(actor?: LancerActor) {
   if (!actor) return [];
   let loadOut = actor.loadoutHelper.listLoadout();
   return loadOut
-    .map((item): ActionItem[] => {
+    .flatMap((item): ActionItem[] => {
       const itemId = item.id;
-      const actions = la().getActorActions(actor) as ActionData[];
-      //la().getItemDeployables()
       const acts = la().getItemActions(item);
       const options: ActionItem[] = [];
       if (item.is_frame()) {
@@ -477,5 +485,4 @@ export function getActorActionItems(actor?: LancerActor) {
       }
       return options;
     })
-    .flatMap((a) => a);
 }

@@ -133,16 +133,7 @@ type ActionMap = Record<string, SubMenuItem>;
 
 // Basic routing, by using the id and starts with you can id thing that map to the same aciton, e.g. basic-attack/basic-attack-ram
 const actions = {
-  scan: {
-    //Macro id for scan/scan journal
-    id: "macro-yPxTd02BZDkVXDwi",
-    name: "Scan",
-    cost: ActivationType.QuickTech,
-    img: imgs.la.radar,
-    description:
-      "When you SCAN, you use your mech’s powerful sensors to perform a deep scan on an enemy.<br>" +
-      "• Your target’s weapons, systems, and full statistics (HP, SPEED, EVASION, ARMOR, MECH SKILLS, and so on).",
-  },
+  scan: SimpleActionMacros.Scan,
   stabilize: {
     id: "macro-k4o9aWoJTVb2sd8a",
     name: `Stabilize`,
