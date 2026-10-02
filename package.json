@@ -2,17 +2,28 @@
   "name": "stylish-lancer-hud",
   "private": true,
   "scripts": {
-    "build": "tsgo -b",
-    "watch": "tsgo -w",
+    "build": "tsc -b",
+    "watch": "tsc -w",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "oxfmt",
+      "oxlint --fix",
+      "oxlint"
+    ]
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260421.2",
     "fvtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.51.0",
-    "oxlint": "^1.66.0"
+    "oxlint": "^1.66.0",
+    "typescript": "^7.0.2"
   }
 }

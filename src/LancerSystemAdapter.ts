@@ -17,13 +17,13 @@ import {
   bondSubMenuData,
   byActionType,
   getActorActionItems,
-  getItem,
   itemSubMenuData,
   RemapAction,
   weaponsByMount,
 } from "./ActivationType.js";
 import { SimpleActionMacros } from "./SimpleActions.js";
 import { pilotForMech } from "./HudActorManagement.js";
+import { getItem } from "./ActivatedItem.js";
 
 const isInvade = (a: Pick<ActionData, "activation">) => a.activation === "Invade";
 
@@ -312,11 +312,7 @@ function fixupSmItems(sm: SubMenuData): SubMenuData {
     items = Object.values(items).flatMap((x) => x);
   }
   items.forEach((i) => {
-    try {
-      i.globalFlavor = i.description;
-    } catch (e) {
-      console.log(items);
-    }
+    i.globalFlavor = i.description;
   });
   return sm;
 }
@@ -897,7 +893,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         }
       };
 
-      function pilotTalents(prefix, actor: LancerPILOT) {
+      // oxlint-disable-next-line no-unused-vars
+      function pilotTalents(prefix: string, actor: LancerPILOT) {
         let items = [...actor.items] as LancerItem[];
         const acc = [];
         // Counters are a map how do we path it?
