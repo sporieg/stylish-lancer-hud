@@ -16,4 +16,4 @@ export declare class BonusField extends fields.SchemaField {
 }
 export declare function generateBonus(lid: string, val: string | number, replace?: boolean, overwrite?: boolean): BonusData;
 export declare function unpackBonus(data: PackedBonusData): BonusData;
-export {};
+

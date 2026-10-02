@@ -23,4 +23,4 @@ export declare function parsePowerUses(frequency: string | null | undefined): Fu
  */
 export declare function fixupPowerUses(power: PowerData): PowerData;
 export declare function unpackPower(data: PackedBondPowerData): PowerData;
-export {};
+

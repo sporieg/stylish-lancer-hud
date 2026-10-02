@@ -44,4 +44,4 @@ type FakePackedNPC = {
     actions: number;
 };
 export declare function validForExport(actor: LegacyLancerActor | LancerActor): boolean;
-export {};
+

@@ -14,4 +14,4 @@ export declare class AmmoField extends fields.SchemaField {
     constructor(options?: {});
 }
 export declare function unpackAmmo(data: PackedAmmoData): AmmoData;
-export {};
+

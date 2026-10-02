@@ -1205,7 +1205,7 @@ declare global {
     /**
      * Set the sound output channel.
      */
-    audioChannel(inString: String): this;
+    audioChannel(inString: string): this;
 
     /**
      * Whether the sound will play for GMs as if they were hearing it at the origin of the sound.
@@ -1630,9 +1630,9 @@ declare global {
     object?: string | VisibleFoundryTypes;
     name?: string;
     sceneId?: string;
-    source?: PlaceableObject | Document | String;
-    target?: PlaceableObject | Document | String;
-    origin?: String;
+    source?: PlaceableObject | Document | string;
+    target?: PlaceableObject | Document | string;
+    origin?: string;
   };
 
   /**
@@ -1755,7 +1755,7 @@ declare global {
      */
     collect(
       crosshair?: CrosshairsDocument,
-      types?: String | Array<string>,
+      types?: string | Array<string>,
       filterMethod?: AnyFunction
     ): Array<Document>;
   }

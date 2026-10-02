@@ -192,4 +192,4 @@ export type LancerWEAPON_MOD = LancerItem & {
 export type LancerItemType = EntryType.CORE_BONUS | EntryType.FRAME | EntryType.LICENSE | EntryType.MECH_WEAPON | EntryType.MECH_SYSTEM | EntryType.NPC_CLASS | EntryType.NPC_TEMPLATE | EntryType.NPC_FEATURE | EntryType.ORGANIZATION | EntryType.PILOT_ARMOR | EntryType.PILOT_WEAPON | EntryType.PILOT_GEAR | EntryType.RESERVE | EntryType.SKILL | EntryType.STATUS | EntryType.TALENT | EntryType.BOND | EntryType.WEAPON_MOD;
 export declare const ITEM_TYPES: EntryType[];
 export declare function is_item_type(type: EntryType): type is LancerItemType;
-export {};
+

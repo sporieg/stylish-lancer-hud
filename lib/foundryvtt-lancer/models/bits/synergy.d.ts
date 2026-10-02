@@ -15,4 +15,4 @@ export declare class SynergyField extends fields.SchemaField {
     migrateSource(sourceData: any, fieldData: any): any;
 }
 export declare function unpackSynergy(data: PackedSynergyData): SynergyData;
-export {};
+

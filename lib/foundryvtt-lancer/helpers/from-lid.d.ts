@@ -44,4 +44,4 @@ export declare function fromLidSync(lid: string, { source }?: Partial<FromLidOpt
     type: EntryType;
     uuid: string;
 };
-export {};
+

@@ -46,4 +46,4 @@ interface LancerDocMap extends DataTypeMap {
     [EntryType.WEAPON_MOD]: LancerWEAPON_MOD;
 }
 export type LancerDoc<T extends EntryType = EntryType> = T extends keyof LancerDocMap ? LancerDocMap[T] : never;
-export {};
+

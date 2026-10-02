@@ -31,4 +31,4 @@ export declare class DamageField extends fields.SchemaField {
     _cast(value: any): any;
 }
 export declare function unpackDamage(data: PackedDamageData): DamageData;
-export {};
+

@@ -26,4 +26,4 @@ export declare class ActionField extends fields.SchemaField {
 }
 export declare function unpackAction(data: PackedActionData): ActionData;
 export declare function repairActivationType(activation: string): ActivationType;
-export {};
+

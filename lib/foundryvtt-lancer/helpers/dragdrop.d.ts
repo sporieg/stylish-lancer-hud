@@ -74,4 +74,4 @@ export type ResolvedDropData = {
 export declare function resolveNativeDrop(drop: string | FoundryDropData): Promise<ResolvedDropData | null>;
 export declare let GlobalDragPreview: ResolvedDropData | null;
 export declare function applyGlobalDragListeners(): void;
-export {};
+

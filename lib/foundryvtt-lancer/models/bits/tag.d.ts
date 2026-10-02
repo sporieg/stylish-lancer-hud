@@ -60,4 +60,4 @@ export declare class TagField extends fields.SchemaField {
 }
 export declare function unpackTagTemplate(data: PackedTagTemplateData): TagTemplateData;
 export declare function unpackTag(data: PackedTagData): TagData;
-export {};
+

@@ -18,4 +18,4 @@ export declare class CounterField extends fields.SchemaField {
     _validateType(value: CounterData): void;
 }
 export declare function unpackCounter(data: PackedCounterData): CounterData;
-export {};
+

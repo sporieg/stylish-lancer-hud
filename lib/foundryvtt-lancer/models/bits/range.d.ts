@@ -29,4 +29,4 @@ export declare class RangeField extends fields.SchemaField {
     _cast(value: any): any;
 }
 export declare function unpackRange(data: PackedRangeData): RangeData;
-export {};
+

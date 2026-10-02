@@ -30,4 +30,4 @@ export declare class InventoryDialog extends Dialog {
     activateListeners(html: JQuery<HTMLElement>): void;
     static show_inventory(actor: LancerActor): Promise<void>;
 }
-export {};
+

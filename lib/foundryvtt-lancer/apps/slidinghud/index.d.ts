@@ -13,4 +13,4 @@ type HUDData = {
     struct: StructStressData;
     stress: StructStressData;
 };
-export {};
+

@@ -294,5 +294,5 @@ export declare namespace LancerFlowState {
         Damage = "Damage",
         TechAttack = "TechAttack"
     }
-    export {};
+    
 }

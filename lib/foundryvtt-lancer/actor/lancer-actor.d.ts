@@ -170,4 +170,4 @@ export type LancerDEPLOYABLE = LancerActor & {
 export type LancerActorType = EntryType.MECH | EntryType.DEPLOYABLE | EntryType.NPC | EntryType.PILOT;
 export declare const ACTOR_TYPES: LancerActorType[];
 export declare function is_actor_type(type: any): type is LancerActorType;
-export {};
+

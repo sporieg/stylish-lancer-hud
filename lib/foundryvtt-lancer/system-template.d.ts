@@ -129,7 +129,7 @@ export declare namespace SystemTemplates {
         }
         export type AnyFeature = TechData | SystemData | ReactionData | TraitData | WeaponData;
         export type AllFeature = TechData & SystemData & ReactionData & TraitData & WeaponData;
-        export {};
+        
     }
     type ResolvedEmbeddedRef<T> = {
         status: "resolved";

@@ -53,4 +53,4 @@ export declare function generateNpcDataFromClass(npc_class: {
     img: string | undefined;
     system: DeepPartial<SourceData.Npc>;
 };
-export {};
+

@@ -358,4 +358,4 @@ export declare class MechModel extends LancerDataModel<DataSchema, Actor> {
     static defineSchema(): MechSchema;
     static migrateData(data: any): import("@league-of-foundry-developers/foundry-vtt-types/src/types/utils.mjs").AnyObject;
 }
-export {};
+

@@ -18,4 +18,4 @@ export default class SvelteApp<DataModel> extends Application {
     close(): Promise<void>;
     _renderInner(_data: any): Promise<JQuery<HTMLElement>>;
 }
-export {};
+

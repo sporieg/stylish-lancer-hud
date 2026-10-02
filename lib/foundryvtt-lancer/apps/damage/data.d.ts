@@ -496,4 +496,4 @@ export declare class DamageHudData {
         };
     }): DamageHudData;
 }
-export {};
+

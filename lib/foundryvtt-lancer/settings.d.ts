@@ -620,4 +620,4 @@ declare global {
         Combatant: typeof LancerCombatant;
     }
 }
-export {};
+
