@@ -1,8 +1,4 @@
-import {
-  LancerActor,
-  type LancerMECH,
-  type LancerPILOT,
-} from "foundryvtt-lancer/actor/lancer-actor";
+import { LancerActor, type LancerMECH } from "foundryvtt-lancer/actor/lancer-actor";
 import { ActionData } from "foundryvtt-lancer/models/bits/action";
 import {
   LancerBOND,
@@ -13,7 +9,7 @@ import {
 } from "foundryvtt-lancer/item/lancer-item";
 import { imgs } from "./images.js";
 import { logInvalidItem } from "./log.js";
-import { pilotForMech } from "./HudActorManagement.js";
+import { itemActionId, itemActionPath } from "./ActivatedItem.js";
 
 // Copied from foundryvtt-lancer/enums, actual values get borked in foundry loading.
 export const ENTRY_TYPE = {
@@ -121,39 +117,6 @@ const INVERTED_ACTIVATION_TAG_MAP = Object.fromEntries(
   Object.entries(ACTIVATION_TAG_MAP).map(([key, value]) => [value, key]),
 ) as InvertedActivationMap;
 
-export const ID_DELIMITER = ">";
-
-/*
-You might use this for a core item, that has a defualt path instead of other items where you must have the indexed path
- */
-export function itemActionPath(itemId: string, path: string = "system.actions") {
-  return [itemId, path].join(ID_DELIMITER);
-}
-
-export function itemActionId(itemId: string, idx: number, path: string = "system.actions") {
-  return itemActionPath(itemId, `${path}.${idx}`);
-}
-
-
-
-/**
- * Gets a complex activation from an actionId route.
- * Returns the item + path pair you could use later to target a specific activation on the item.
- * @param actor
- * @param actionId
- */
-export function getItem(actor: LancerActor, actionId: string): [LancerItem, string] {
-  const activationParts = actionId.split(ID_DELIMITER);
-  const itemId = activationParts[0];
-  const dataPath = activationParts[1];
-  // @ts-ignore
-  let item: LancerItem = actor.items.get(itemId);
-  if (!item && actor.is_mech()) {
-    return getItem(pilotForMech(actor), actionId);
-  }
-  return [item, dataPath];
-}
-
 export type ActionItem = {
   item: LancerItem;
   action: Pick<ActionData, "activation">;
@@ -199,7 +162,6 @@ export function isUsableItem(item: any) {
   return true;
 }
 
-
 /**
  * I could put the help on system, but I think there are enough potential edge cases
  * among system.weapon/system/other taggable things just put it here.s
@@ -231,7 +193,6 @@ export function tagsCostAndDescription(value: LancerItem) {
     description: description.join(" "),
   };
 }
-
 
 // Frames are intrinsically special and contain whole trees of actions.
 function coreSystem(item: LancerFRAME): ActionItem[] {
@@ -405,84 +366,81 @@ export function getActorActionItems(actor?: LancerActor): ActionItem[] {
   //TODO: Deployable e.g.  A mine in addition to grenade.
   if (!actor) return [];
   let loadOut = actor.loadoutHelper.listLoadout();
-  return loadOut
-    .flatMap((item): ActionItem[] => {
-      const itemId = item.id;
-      const acts = la().getItemActions(item);
-      const options: ActionItem[] = [];
-      if (item.is_frame()) {
-        options.push(...coreSystem(item));
-      }
-      // Frames and items with deploybables can apply.
+  return loadOut.flatMap((item): ActionItem[] => {
+    const itemId = item.id;
+    const acts = la().getItemActions(item);
+    const options: ActionItem[] = [];
+    if (item.is_frame()) {
+      options.push(...coreSystem(item));
+    }
+    //const tags = await la().getItemTags_WithBonus(item, actor);
+    const { cost, description } = tagsCostAndDescription(item);
+    const usable = isUsableItem(item);
+    //Try and match to a light theme image if one matches well.
+    let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
+    const name = usable
+      ? item.name
+      : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
 
-      //const tags = await la().getItemTags_WithBonus(item, actor);
-      const { cost, description } = tagsCostAndDescription(item);
-      const usable = isUsableItem(item);
-      //Try and match to a light theme image if one matches well.
-      let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
-      const name = usable
-        ? item.name
-        : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
-
-      if (("deployables" in item.system && item.system.deployables.length > 0) || item.is_frame()) {
-        //item.system.deployables[0]
-        img = imgs.lancer.deployable;
-        const d = la()
-          .getItemDeployables(item, actor)
-          .map((d) => ({
+    if (("deployables" in item.system && item.system.deployables.length > 0) || item.is_frame()) {
+      //item.system.deployables[0]
+      img = imgs.lancer.deployable;
+      const d = la()
+        .getItemDeployables(item, actor)
+        .map((d) => ({
+          item,
+          action: {
+            activation: "Quick",
+          },
+          subMenuItem: {
+            id: "",
+            name: name,
+          },
+        }));
+      // Just hit the deployable button please.  To find mines I gotta go into the compendiums.
+    }
+    if (acts.length > 0) {
+      options.push(
+        ...(acts as ActionData[]).map((action, idx) => {
+          let fmtName = `${action.name} [${item.name}]`;
+          if (action.name === "Action") {
+            fmtName = item.name;
+          }
+          const name = (item.system as any).destroyed
+            ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
+            : fmtName;
+          return {
             item,
-            action: {
-              activation: "Quick",
-            },
+            action,
             subMenuItem: {
-              id: "",
-              name: name,
+              id: itemActionId(itemId, idx, "system.actions"),
+              name,
+              img,
+              description: action.detail,
+              cost,
+              isExhausted: !usable,
+              uses: item.isLimited() && item.system.uses,
             },
-          }));
-        // Just hit the deployable button please.  To find mines I gotta go into the compendiums.
+          };
+        }),
+      );
+    } else if (item.is_npc_feature()) {
+      const tg = item.system.tags.find((t) => actionTags.includes(t.val));
+      const activation = INVERTED_ACTIVATION_TAG_MAP[tg?.val as ActivationValue];
+      if (activation) {
+        options.push({
+          item,
+          action: {
+            activation: activation as any,
+          },
+          subMenuItem: {
+            id: item.id,
+            name: item.name,
+            description: item.system.effect,
+          },
+        });
       }
-      if (acts.length > 0) {
-        options.push(
-          ...(acts as ActionData[]).map((action, idx) => {
-            let fmtName = `${action.name} [${item.name}]`;
-            if (action.name === "Action") {
-              fmtName = item.name;
-            }
-            const name = (item.system as any).destroyed
-              ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
-              : fmtName;
-            return {
-              item,
-              action,
-              subMenuItem: {
-                id: itemActionId(itemId, idx, "system.actions"),
-                name,
-                img,
-                description: action.detail,
-                cost,
-                isExhausted: !usable,
-                uses: item.isLimited() && item.system.uses,
-              },
-            };
-          }),
-        );
-      } else if (item.is_npc_feature()) {
-        const tg = item.system.tags.find((t) => actionTags.includes(t.val));
-        const activation = INVERTED_ACTIVATION_TAG_MAP[tg?.val as ActivationValue];
-        if (activation) {
-          options.push({
-            item,
-            action: {
-              activation: activation as any,
-            },
-            subMenuItem: {
-              id: item.id,
-              name: item.name,
-              description: item.system.effect,
-            },
-          });
-        }
-      }
-      return options;
-    })
+    }
+    return options;
+  });
 }

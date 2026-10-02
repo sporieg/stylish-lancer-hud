@@ -10,8 +10,8 @@
     "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
-    "fvtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
     "@typescript/native-preview": "^7.0.0-dev.20260421.2",
+    "fvtt-types": "github:League-of-Foundry-Developers/foundry-vtt-types#main",
     "oxfmt": "^0.51.0",
     "oxlint": "^1.66.0"
   }

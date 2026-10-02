@@ -218,7 +218,7 @@ export const SimpleActionMacros = {
     img: imgs.la["time-bomb"],
     cost: ActivationType.None,
     description: "",
-  },//Macro.TAV2Q3LXY9kgpGSC
+  }, //Macro.TAV2Q3LXY9kgpGSC
   Boot_Up: {
     id: "macro-jSHdRqemfzFQE5HG",
     name: "Boot Up",

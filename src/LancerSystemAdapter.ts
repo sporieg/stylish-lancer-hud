@@ -4,10 +4,7 @@ import {
   LancerNPC,
   LancerPILOT,
 } from "foundryvtt-lancer/actor/lancer-actor";
-import {
-  LancerItem,
-  LancerSKILL,
-} from "foundryvtt-lancer/item/lancer-item";
+import { LancerItem, LancerSKILL } from "foundryvtt-lancer/item/lancer-item";
 import type { ActionData } from "foundryvtt-lancer/models/bits/action";
 import { debug } from "./log.js";
 import { LancerToken } from "foundryvtt-lancer/token";
@@ -125,7 +122,7 @@ const Groups = {
     systemId: "statuses-and-conditions",
     icon: "cci ",
     type: "submenu",
-  }
+  },
 } satisfies Record<string, ActionMenuCategory>;
 // In order to favorite, all non-item ids will need to start with macro-
 type ActionMap = Record<string, SubMenuItem>;
@@ -158,13 +155,6 @@ const actions = {
   eject: SimpleActionMacros.Eject,
   boot_up: SimpleActionMacros.Boot_Up,
   lock_on: SimpleActionMacros.Lock_On,
-  boost: {
-    id: "boost",
-    name: "Boost",
-    img: imgs.la.speedometer,
-    cost: ActivationType.Quick,
-    description: "Increases your movement cap by your SPEED",
-  },
   skirmish: SimpleActionMacros.Skirmish,
   barrage: SimpleActionMacros.Barrage,
   improvised_attack: {
@@ -224,7 +214,6 @@ const FlowItems = () => ({
       actions.search,
       actions.scan,
       actions.bolster,
-      actions.boost,
       actions.eject,
       actions.basic_attack,
       actions.basic_ram,
@@ -251,7 +240,6 @@ const FlowItems = () => ({
       actions.hide,
       actions.search,
       actions.scan,
-      actions.boost,
       actions.basic_attack,
       actions.basic_ram,
       actions.basic_grapple,
@@ -335,7 +323,7 @@ function fixupSmItems(sm: SubMenuData): SubMenuData {
 
 // Native equiv for lodash get.
 const get = (obj, path, defaultValue = undefined) => {
-  const travel = regexp =>
+  const travel = (regexp) =>
     String.prototype.split
       .call(path, regexp)
       .filter(Boolean)
@@ -408,21 +396,21 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
 
     override resolveQuickSlotData(actor: LancerActor, itemId: string): QuickSlotData {
       const base = super.resolveQuickSlotData(actor, itemId);
-      if(base) {
+      if (base) {
         return base;
       }
-      const action = Object.values(actions).find(a => a.id === itemId);
-      if(action) {
+      const action = Object.values(actions).find((a) => a.id === itemId);
+      if (action) {
         return action;
       }
       const [embeddedItemAction, path] = getItem(actor, itemId);
       let activ: ActionData | undefined = get(embeddedItemAction, path);
-      if(embeddedItemAction) {
+      if (embeddedItemAction) {
         return {
           name: activ?.name ?? embeddedItemAction.name,
           // I want the action name, imm,
-          img: embeddedItemAction.img
-        }
+          img: embeddedItemAction.img,
+        };
       }
       return null;
     }
@@ -711,11 +699,12 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           actions.barrage,
           {
             isHeader: true,
-            name: "Basic Attacks"
+            name: "Basic Attacks",
           } as SubMenuHeaderItem,
           actions.basic_attack,
           actions.basic_ram,
-          actions.basic_grapple],
+          actions.basic_grapple,
+        ],
         mounts: weaponItems,
       };
       return {
