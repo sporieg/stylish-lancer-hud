@@ -232,7 +232,8 @@ export const SimpleActionMacros = {
     name: "Fragment_Signal",
     img: "systems/lancer/assets/icons/white/tech_quick.svg",
     cost: ActivationType.Quick,
-    description: "",
+    description:
+      "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
   },
   Hide: {
     id: "macro-qZ1ChJevGewqjM2l",

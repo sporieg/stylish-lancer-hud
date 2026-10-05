@@ -163,16 +163,9 @@ interface SystemAdapterInstance<T> {
   rollStat(actor: T, path: string, event: Event): MaybePromise<unknown> | null;
   isStatRollable(path: string): boolean;
   getActionCategories(actor: T): ActionMenuCategory[];
-  getSubMenuData(
-    actor: T,
-    categoryId: string
-  ): MaybePromise<SubMenuData | null>;
+  getSubMenuData(actor: T, categoryId: string): MaybePromise<SubMenuData | null>;
   executeAction(actor: T, actionId: string): Promise<unknown>;
-  useItem(
-    actor: T,
-    itemId: string,
-    event?: Event | null
-  ): Promise<unknown>;
+  useItem(actor: T, itemId: string, event?: Event | null): Promise<unknown>;
   getTrackableAttributes(actor: T): TrackableAttribute[];
   getDefaultAttributes(): AttributeConfig[];
   getDefaultStatusEffects(): StatusEffectConfig[];
@@ -192,6 +185,11 @@ declare abstract class BaseSystemAdapter implements SystemAdapterInstance {
   isStatRollable(path: string): boolean;
   getActionCategories(actor: unknown): ActionMenuCategory[];
   getSubMenuData(actor: unknown, categoryId: string): MaybePromise<SubMenuData | null>;
+  _getSystemSubMenuData(
+    actor: unknown,
+    systemId: string,
+    menuData: ActionMenuCategory,
+  ): MaybePromise<SubMenuData>;
   executeAction(actor: unknown, actionId: string): Promise<unknown>;
   useItem(actor: unknown, itemId: string, event?: Event | null): Promise<unknown>;
   getTrackableAttributes(actor: unknown): TrackableAttribute[];
@@ -200,10 +198,7 @@ declare abstract class BaseSystemAdapter implements SystemAdapterInstance {
   getDefaultLayout?(): LayoutConfig[];
 }
 type SystemAdapterFactory = () => SystemAdapterInstance;
-type SystemAdapterRegistration =
-  | SystemAdapterClass
-  | SystemAdapterFactory
-  | SystemAdapterInstance;
+type SystemAdapterRegistration = SystemAdapterClass | SystemAdapterFactory | SystemAdapterInstance;
 
 interface AdapterCompatibilityContext extends Record<string, unknown> {
   system?: unknown;
@@ -222,9 +217,7 @@ interface AdapterEntry {
   adapter: SystemAdapterRegistration;
   priority: number;
   order: number;
-  isCompatible:
-    | ((context: AdapterCompatibilityContext) => boolean)
-    | null;
+  isCompatible: ((context: AdapterCompatibilityContext) => boolean) | null;
   source: string;
 }
 
@@ -245,9 +238,7 @@ interface DefaultResolveOptions extends Record<string, unknown> {
   actor?: Actor;
 }
 
-type DefaultProvider<T> =
-  | T[]
-  | ((context: DefaultResolutionContext) => T[]);
+type DefaultProvider<T> = T[] | ((context: DefaultResolutionContext) => T[]);
 
 interface DefaultRegistrationOptions {
   priority?: number;
@@ -262,9 +253,7 @@ interface DefaultEntry<T> {
   data: DefaultProvider<T>;
   priority: number;
   order: number;
-  isCompatible:
-    | ((context: DefaultResolutionContext) => boolean)
-    | null;
+  isCompatible: ((context: DefaultResolutionContext) => boolean) | null;
   mode: "replace" | "append" | "prepend";
   source: string;
 }
@@ -288,16 +277,14 @@ interface CategoryEntry {
 
 type SubMenuProvider = (
   actor: Actor,
-  categoryId: string
+  categoryId: string,
 ) => MaybePromise<SubMenuData | null | undefined>;
 
 interface SubMenuRegistrationOptions {
   priority?: number;
   source?: string;
   id?: string;
-  isCompatible?: (
-    context: { actor: Actor; categoryId: string }
-  ) => boolean;
+  isCompatible?: (context: { actor: Actor; categoryId: string }) => boolean;
 }
 
 interface SubMenuEntry {
@@ -305,9 +292,7 @@ interface SubMenuEntry {
   provider: SubMenuProvider;
   priority: number;
   order: number;
-  isCompatible:
-    | ((context: { actor: Actor; categoryId: string }) => boolean)
-    | null;
+  isCompatible: ((context: { actor: Actor; categoryId: string }) => boolean) | null;
   source: string;
 }
 
@@ -398,15 +383,15 @@ interface OverlayLink {
 
 type OverlayValidationResult =
   | {
-  valid: false;
-  reason: "missing" | "not-found" | "actor-mismatch";
-}
+      valid: false;
+      reason: "missing" | "not-found" | "actor-mismatch";
+    }
   | {
-  valid: true;
-  actorId: string;
-  token: string;
-  expiresAt?: number;
-};
+      valid: true;
+      actorId: string;
+      token: string;
+      expiresAt?: number;
+    };
 
 interface ExportPresetOptions {
   includeTheme?: boolean;
@@ -463,12 +448,12 @@ interface StylishActionHudAPI {
   registerSystemAdapter(
     systemId: string,
     adapter: SystemAdapterRegistration,
-    options?: AdapterRegistrationOptions
+    options?: AdapterRegistrationOptions,
   ): AdapterEntry;
 
   createSystemAdapter(
     systemId: string,
-    options?: CreateSystemAdapterOptions
+    options?: CreateSystemAdapterOptions,
   ): SystemAdapterInstance;
 
   getRegisteredAdapters(systemId: string): AdapterEntry[];
@@ -477,130 +462,116 @@ interface StylishActionHudAPI {
   registerDefaultAttributes(
     systemId: string,
     data: DefaultProvider<AttributeConfig>,
-    options?: DefaultRegistrationOptions
+    options?: DefaultRegistrationOptions,
   ): DefaultEntry<AttributeConfig>;
 
   registerDefaultLayout(
     systemId: string,
     data: DefaultProvider<LayoutConfig>,
-    options?: DefaultRegistrationOptions
+    options?: DefaultRegistrationOptions,
   ): DefaultEntry<LayoutConfig>;
 
   registerDefaultStatusEffects(
     systemId: string,
     data: DefaultProvider<StatusEffectConfig>,
-    options?: DefaultRegistrationOptions
+    options?: DefaultRegistrationOptions,
   ): DefaultEntry<StatusEffectConfig>;
 
   registerTrackableAttributes(
     systemId: string,
     data: DefaultProvider<TrackableAttribute>,
-    options?: DefaultRegistrationOptions
+    options?: DefaultRegistrationOptions,
   ): DefaultEntry<TrackableAttribute>;
 
   getDefaultAttributes(
     systemId: string,
     adapter: SystemAdapterInstance,
-    options?: DefaultResolveOptions
+    options?: DefaultResolveOptions,
   ): AttributeConfig[];
 
   getDefaultLayout(
     systemId: string,
     adapter: SystemAdapterInstance,
-    options?: DefaultResolveOptions
+    options?: DefaultResolveOptions,
   ): LayoutConfig[];
 
   getDefaultStatusEffects(
     systemId: string,
     adapter: SystemAdapterInstance,
-    options?: DefaultResolveOptions
+    options?: DefaultResolveOptions,
   ): StatusEffectConfig[];
 
   getTrackableAttributes(
     systemId: string,
     adapter: SystemAdapterInstance,
-    options?: DefaultResolveOptions
+    options?: DefaultResolveOptions,
   ): TrackableAttribute[];
 
   listDefaultAttributes(
-    systemId?: string
-  ): DefaultEntry<AttributeConfig>[] |
-    Array<[string, DefaultEntry<AttributeConfig>[]]>;
+    systemId?: string,
+  ): DefaultEntry<AttributeConfig>[] | Array<[string, DefaultEntry<AttributeConfig>[]]>;
 
   listDefaultLayouts(
-    systemId?: string
-  ): DefaultEntry<LayoutConfig>[] |
-    Array<[string, DefaultEntry<LayoutConfig>[]]>;
+    systemId?: string,
+  ): DefaultEntry<LayoutConfig>[] | Array<[string, DefaultEntry<LayoutConfig>[]]>;
 
   listDefaultStatusEffects(
-    systemId?: string
-  ): DefaultEntry<StatusEffectConfig>[] |
-    Array<[string, DefaultEntry<StatusEffectConfig>[]]>;
+    systemId?: string,
+  ): DefaultEntry<StatusEffectConfig>[] | Array<[string, DefaultEntry<StatusEffectConfig>[]]>;
 
   listTrackableAttributes(
-    systemId?: string
-  ): DefaultEntry<TrackableAttribute>[] |
-    Array<[string, DefaultEntry<TrackableAttribute>[]]>;
+    systemId?: string,
+  ): DefaultEntry<TrackableAttribute>[] | Array<[string, DefaultEntry<TrackableAttribute>[]]>;
 
   registerActionMenuCategory(
     category: ActionMenuCategory,
-    options?: CategoryRegistrationOptions
+    options?: CategoryRegistrationOptions,
   ): CategoryEntry;
 
   registerActionMenuSubMenu(
     categoryId: string,
     provider: SubMenuProvider,
-    options?: SubMenuRegistrationOptions
+    options?: SubMenuRegistrationOptions,
   ): SubMenuEntry;
 
   getRegisteredActionMenuCategories(): CategoryEntry[];
   getRegisteredActionMenuSubMenus(): Array<[string, SubMenuEntry[]]>;
 
-  registerTheme(
-    key: string,
-    themeData: ThemeDefinition
-  ): ThemeDefinition | null;
+  registerTheme(key: string, themeData: ThemeDefinition): ThemeDefinition | null;
   getThemes(): Record<string, ThemeDefinition>;
 
   onModifyActionMenuCategories(
-    callback: (categories: ActionMenuCategory[], actor: Actor) => void
+    callback: (categories: ActionMenuCategory[], actor: Actor) => void,
   ): number;
 
   onModifyActionMenuData(
-    callback: (
-      data: SubMenuData,
-      actor: Actor,
-      categoryId: string
-    ) => void
+    callback: (data: SubMenuData, actor: Actor, categoryId: string) => void,
   ): number;
 
   updateConfiguration(
     updates: Partial<Configuration>,
-    options?: { replace?: boolean }
+    options?: { replace?: boolean },
   ): Promise<Configuration>;
 
   updateClientPositions(
     updates: Partial<ClientPositions>,
-    options?: { replace?: boolean }
+    options?: { replace?: boolean },
   ): Promise<ClientPositions>;
 
   exportPreset(options?: ExportPresetOptions): Promise<Preset>;
-  importPreset(
-    presetData: Preset,
-    options?: ImportPresetOptions
-  ): Promise<ImportResult>;
+  importPreset(presetData: Preset, options?: ImportPresetOptions): Promise<ImportResult>;
   downloadPreset(preset: Preset, filename?: string | null): void;
-  importPresetFromFile(
-    options?: ImportPresetOptions
-  ): Promise<ImportResult>;
+  importPresetFromFile(options?: ImportPresetOptions): Promise<ImportResult>;
 
-  createOverlayLink(
-    actorId: string,
-    options?: { ttlHours?: number }
-  ): Promise<OverlayLink>;
+  createOverlayLink(actorId: string, options?: { ttlHours?: number }): Promise<OverlayLink>;
 
-  validateOverlayLink(
-    actorId: string,
-    token: string
-  ): Promise<OverlayValidationResult>;
+  validateOverlayLink(actorId: string, token: string): Promise<OverlayValidationResult>;
+}
+
+declare module "fvtt-types/configuration" {
+  interface SettingConfig {
+    "stylish-action-hud": {
+      configuration: Configuration;
+    };
+  }
 }

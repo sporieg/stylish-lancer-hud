@@ -2,14 +2,10 @@ import { LancerActor, type LancerMECH } from "foundryvtt-lancer/actor/lancer-act
 import { ActionData } from "foundryvtt-lancer/models/bits/action";
 import {
   LancerBOND,
-  LancerCORE_BONUS,
   LancerFRAME,
   LancerItem,
-  LancerLICENSE,
   LancerMECH_SYSTEM,
   LancerMECH_WEAPON,
-  LancerNPC_CLASS,
-  LancerNPC_FEATURE,
   LancerWEAPON_MOD,
 } from "foundryvtt-lancer/item/lancer-item";
 import { imgs } from "./Images.js";
@@ -43,8 +39,7 @@ export const ENTRY_TYPE = {
   TALENT: "talent",
   BOND: "bond",
 } as const satisfies Record<string, EntryTypeValue>;
-
-export type ENTRY_TYPE_VALUES = (typeof ENTRY_TYPE)[keyof typeof ENTRY_TYPE];
+export type SheetTypes = Extract<EntryTypeValue, "mech" | "npc" | "pilot" | "deployable">;
 
 type ItemMapper<SubType extends Item.SubType = Item.SubType> = (item: Item<SubType>) => ActionItem;
 

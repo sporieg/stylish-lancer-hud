@@ -7,8 +7,6 @@ import {
 import { LancerItem, LancerSKILL } from "foundryvtt-lancer/item/lancer-item";
 import type { ActionData } from "foundryvtt-lancer/models/bits/action";
 import { debug } from "./log.js";
-import { LancerToken } from "foundryvtt-lancer/token";
-import { LancerCombatant } from "foundryvtt-lancer/combat/lancer-combat";
 import { imgs } from "./Images.js";
 import {
   ActionItem,
@@ -19,11 +17,13 @@ import {
   getActorActionItems,
   itemSubMenuData,
   RemapAction,
+  SheetTypes,
   weaponsByMount,
 } from "./ActivationType.js";
 import { SimpleActionMacros } from "./SimpleActions.js";
-import { mechForPilot, pilotForMech } from "./adapters/helpers.js";
+import { getCombatant, pilotForMech } from "./adapters/helpers.js";
 import { getItem } from "./ActivatedItem.js";
+import attributeLooks from "./adapters/attributes.js";
 
 const isInvade = (a: Pick<ActionData, "activation">) => a.activation === "Invade";
 
@@ -124,12 +124,11 @@ const Groups = {
     type: "submenu",
   },
 } satisfies Record<string, ActionMenuCategory>;
-// In order to favorite, all non-item ids will need to start with macro-
 type ActionMap = Record<string, SubMenuItem>;
 
+// In order to favorite, all non-item ids will need to start with macro-
 // Basic routing, by using the id and starts with you can id thing that map to the same aciton, e.g. basic-attack/basic-attack-ram
 const actions = {
-  scan: SimpleActionMacros.Scan,
   stabilize: {
     id: "macro-k4o9aWoJTVb2sd8a",
     name: `Stabilize`,
@@ -144,19 +143,6 @@ const actions = {
     img: "systems/lancer/assets/icons/macro-icons/overcharge.svg",
     description: `Once per turn, you can OVERCHARGE your mech, allowing you to make any quick action as a free action – even actions you have already taken this turn.`,
   },
-  deploy_item: SimpleActionMacros.Deploy_Item,
-  overwatch: SimpleActionMacros.Overwatch,
-  brace: SimpleActionMacros.Brace,
-  bolster: SimpleActionMacros.Bolster,
-  disengage: SimpleActionMacros.Disengage,
-  hide: SimpleActionMacros.Hide,
-  search: SimpleActionMacros.Search,
-  dismount: SimpleActionMacros.Dismount,
-  eject: SimpleActionMacros.Eject,
-  boot_up: SimpleActionMacros.Boot_Up,
-  lock_on: SimpleActionMacros.Lock_On,
-  skirmish: SimpleActionMacros.Skirmish,
-  barrage: SimpleActionMacros.Barrage,
   improvised_attack: {
     id: "basic-attack-improvised",
     name: "Improvised Attack",
@@ -188,6 +174,10 @@ const actions = {
   },
 } satisfies ActionMap;
 
+/**
+ * To build the overchage item, we need to know the cost by looking it up.
+ * @param actor
+ */
 function overcharge(actor: LancerMECH): SubMenuItem {
   const cost = actor.system.overcharge.valueOf();
   let costs = actor.system.overcharge_sequence.split(",");
@@ -199,60 +189,59 @@ function overcharge(actor: LancerMECH): SubMenuItem {
 }
 
 /**
- * Always create a new list to avoid accidently pushing to global values.
+ * Use a function to always create a new set of actions each time.
  * @constructor
  */
 const FlowItems = () => ({
   mech: {
     protocol: [] as SubMenuItem[],
     quick: [
-      actions.skirmish,
+      SimpleActionMacros.Skirmish,
       macroInvade,
-      actions.deploy_item,
-      actions.lock_on,
-      actions.hide,
-      actions.search,
-      actions.scan,
-      actions.bolster,
-      actions.eject,
+      SimpleActionMacros.Deploy_Item,
+      SimpleActionMacros.Lock_On,
+      SimpleActionMacros.Hide,
+      SimpleActionMacros.Search,
+      SimpleActionMacros.Scan,
+      SimpleActionMacros.Bolster,
+      SimpleActionMacros.Eject,
       actions.basic_attack,
       actions.basic_ram,
       actions.basic_grapple,
     ],
     full: [
-      actions.barrage,
-      actions.disengage,
+      SimpleActionMacros.Barrage,
+      SimpleActionMacros.Disengage,
       actions.stabilize,
-      actions.dismount,
+      SimpleActionMacros.Dismount,
       actions.improvised_attack,
-      actions.boot_up,
+      SimpleActionMacros.Boot_Up,
     ],
     free: [] as SubMenuItem[],
-    reactions: [actions.overwatch, actions.brace],
+    reactions: [SimpleActionMacros.Overwatch, SimpleActionMacros.Brace],
   },
   npc: {
     protocol: [] as SubMenuItem[],
     quick: [
-      actions.skirmish,
+      SimpleActionMacros.Skirmish,
       macroInvade,
-      actions.deploy_item,
-      actions.lock_on,
-      actions.hide,
-      actions.search,
-      actions.scan,
+      SimpleActionMacros.Deploy_Item,
+      SimpleActionMacros.Lock_On,
+      SimpleActionMacros.Hide,
+      SimpleActionMacros.Search,
       actions.basic_attack,
       actions.basic_ram,
       actions.basic_grapple,
     ],
     full: [
-      actions.barrage,
-      actions.disengage,
+      SimpleActionMacros.Barrage,
+      SimpleActionMacros.Disengage,
       actions.stabilize,
       actions.improvised_attack,
-      actions.boot_up,
+      SimpleActionMacros.Boot_Up,
     ],
     free: [] as SubMenuItem[],
-    reactions: [actions.overwatch],
+    reactions: [SimpleActionMacros.Overwatch],
   },
 });
 
@@ -279,6 +268,18 @@ const CompconFLow = (actor: LancerActor) => {
   } as const satisfies SubMenuData;
 };
 
+const actionCategoriesByType: Record<SheetTypes, ActionMenuCategory[]> = {
+  deployable: [Groups.recallDeployable],
+  mech: [Groups.compconFlow, Groups.attack, Groups.invade, Groups.tech, Groups.utility],
+  npc: [Groups.compconFlow],
+  pilot: [Groups.skills],
+};
+
+/**
+ * Hits an embedde activation in the system item.
+ * @param actor
+ * @param actionId
+ */
 function activateSystem(actor: LancerActor, actionId: string) {
   const [item, dataPath] = getItem(actor, actionId);
   if (!item) {
@@ -420,60 +421,43 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     override async useItem(actor: LancerActor, itemId: string, _event = null) {
+      const item = actor.items.get(itemId, {
+        strict: false,
+      }) as LancerItem | null;
+
       // Send macros to our base adapter.
-      if (itemId.startsWith("macro-")) {
-        return super.useItem(actor, itemId);
-      }
-      switch (itemId) {
-        case actions.overcharge.id:
-          return actor.beginOverchargeFlow();
-      }
-      // We built an encoded id for system activations.  Go specialized to general purpose system. flows.
+      if (itemId.startsWith("macro-")) return super.useItem(actor, itemId);
+      if (itemId === actions.overcharge.id) return actor.beginOverchargeFlow();
+      // We built an encoded id for system activations. Go specialized to general-purpose system flows.
       if (
-        itemId.includes("system.core_system") && //Your active core bonus.
+        itemId.includes("system.core_system") &&
         !itemId.includes("system.core_system.active_actions") &&
-        !itemId.includes("system.core_system.passive_actions") // Passives are used like normal systems.
+        !itemId.includes("system.core_system.passive_actions")
       ) {
         return activateCoreSystem(actor, itemId);
       }
-      if (itemId.includes("system")) {
-        return activateSystem(actor, itemId);
-      }
-
-      const item = actor.items.get(itemId) as LancerItem;
-
+      if (itemId.includes("system")) return activateSystem(actor, itemId);
+      if (itemId.startsWith("basic-attack")) return actor.beginBasicAttackFlow("Basic Attack");
+      if (itemId.startsWith("basic-tech")) return actor.beginBasicTechAttackFlow("Basic Tech");
       if (!item) {
-        if (itemId.startsWith("basic-attack")) {
-          return actor.beginBasicAttackFlow("Basic Attack");
-        }
-        if (itemId.startsWith("basic-tech")) {
-          return actor.beginBasicTechAttackFlow("Basic Tech");
-        }
         ui.notifications?.warn(`Item not found: ${itemId}`);
         return;
       }
-
       if (item.is_weapon()) return item.beginWeaponAttackFlow();
       if (item.is_weapon_mod()) return item.beginActivationFlow();
       if (item.is_mech_system()) return item.beginSystemFlow();
       if (item.is_skill()) return item.beginSkillFlow();
-      // TODO: Need a power index
       if (item.is_bond()) return item.beginBondPowerFlow(0);
       return item.sheet.render(true);
     }
 
+    // Todo, we can do execute action for our non item caes.
     override async executeAction(actor: LancerActor, actionId: string) {
-      // I am not checking for combat, assume combat is active when using this class.
-      // There is probably a problem if you put your token on like, 5 times?
-      // @ts-ignore
-      const yourToken = canvas.tokens.controlled.filter((t: LancerToken) => {
-        return t.actor.id === actor.id;
-      })[0];
-      if (!yourToken) ui.notifications?.warn("You must have a token selected to use this action.");
       switch (actionId) {
         case Groups.activate.id:
+          const combatant = getCombatant(actor);
           // @ts-ignore
-          return await game.combat.activateCombatant(yourToken.combatant.id);
+          return await game.combat.activateCombatant(combatant.id);
         case Groups.recallDeployable.id:
           const tokenA = actor.token;
           // This kills the crab
@@ -482,22 +466,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     getCoreLancerActions(actor: LancerActor): ActionMenuCategory[] {
-      if (actor.is_deployable()) {
-        if (actor.system.recall) {
-          return [Groups.recallDeployable];
-        }
-        return [];
-      }
-      if (actor.is_mech()) {
-        return [Groups.compconFlow, Groups.attack, Groups.invade, Groups.tech, Groups.utility];
-      }
-      if (actor.is_npc()) {
-        return [Groups.compconFlow];
-      }
-      if (actor.is_pilot()) {
-        return [Groups.skills];
-      }
-      return [{ id: "sheet", label: "Sheet", icon: "fa-solid fa-id-card", type: "sheet" }];
+      const cats = actionCategoriesByType[actor.type];
+      return cats ?? [{ id: "sheet", label: "Sheet", icon: "fa-solid fa-id-card", type: "sheet" }];
     }
 
     override getActionCategories(actor: LancerActor): ActionMenuCategory[] {
@@ -509,14 +479,9 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         }
         return a;
       });
-      if (actor.inCombat && (actor.is_mech() || actor.is_npc())) {
-        // Is it our turn?
-        const myTurn = game.combat.combatants.find(
-          (c) => c.actor.id === actor.id,
-        ) as unknown as LancerCombatant;
-        if (myTurn && myTurn.activations.value > 0) {
-          basicActions.push(Groups.activate);
-        }
+      const combatant = getCombatant(actor);
+      if (combatant?.activations.value > 0) {
+        basicActions.push(Groups.activate);
       }
       if (customized?.length > 0) {
         basicActions.push(...customized);
@@ -524,74 +489,30 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return basicActions;
     }
 
-    // Straight copied from base, I wish I could just inherit from it :/
-    override getSubMenuData(actor: LancerActor, categoryId: string) {
-      // [수정] ID 파싱 로직 개선 (menu-0, custom-0 모두 대응)
-      const [id, idx] = categoryId.split("-");
-      const index = parseInt(idx);
-
-      // @ts-ignore
-      const config = game.settings.get("stylish-action-hud", "configuration") as any;
-
-      // 1. 우선 커스텀 설정(customMenu)에서 데이터를 찾아봅니다.
-      // Menus are replaced in order normally, but I am going to treat them as additive.
-      // Therefore you could get custom-0 and weapons-0;  custom- is you made it in the gui.
-      // I therefore re-arranged these checks from base.js
-      if (id === "custom") {
-        let menuData = config.customMenu?.[index];
-        if (menuData) {
-          // ★ [Case B] 순수 커스텀 메뉴
-          // @ts-ignore
-          return super._getCustomSubMenuData(actor, menuData, index);
-        }
-      }
-      // Maybe this is if you register-default menu?
-      const defaultLayout = this.getActionCategories(actor);
-      if (defaultLayout[index]) {
-        let menuData = defaultLayout[index];
-        // ★ [Case A] 시스템 고유 ID가 있는 경우 (예: "attack", "magic")
-        if (menuData.systemId) {
-          let subMenuData = this._getSystemSubMenuData(actor, menuData.systemId, menuData);
-          return fixupSmItems(subMenuData);
-        }
-      }
-      // 여전히 데이터가 없으면 빈 리스트 반환
-      return { title: "", items: [] };
-    }
-
-    _getSystemSubMenuData(
+    override _getSystemSubMenuData(
       actor: LancerActor,
       systemId: string,
       menuData: ActionMenuCategory,
     ): SubMenuData {
-      switch (systemId) {
-        case Groups.attack.systemId:
-          if (actor.is_mech()) {
-            return { ...this._buildWeapons(actor), title: menuData.label };
-          }
-          return { title: "mech fail", items: [] };
-        case Groups.invade.systemId:
-          if (actor.is_mech()) {
-            return { ...this._buildInvades(actor), title: menuData.label };
-          }
-          return { title: "mech fail", items: [] };
-        case Groups.tech.systemId:
-          return { ...this._buildTechActivations(actor), title: menuData.label };
-        case Groups.utility.systemId:
-          return { ...this._buildUtility(actor), title: menuData.label };
-        case Groups.compconFlow.systemId:
-          if (actor.is_mech() || actor.is_npc()) {
-            return this._buildCompconFlow(actor);
-          }
-          return { title: "mech fail", items: [] };
-        case Groups.skills.systemId:
-          if (actor.is_pilot()) {
-            return { ...this._buildSkills(actor), title: menuData.label };
-          }
-          return { title: "skill fail", items: [] };
-        default:
-          return { title: "label", items: [] };
+      // fixupSmItems(subMenuData);
+      const menu: SubMenuData = {
+        title: menuData.label,
+        items: [],
+      };
+      if (systemId === Groups.attack.systemId && actor.is_mech()) {
+        menu.items = this._buildWeapons(actor).items;
+      } else if (systemId === Groups.invade.systemId && actor.is_mech()) {
+        menu.items = this._buildInvades(actor).items;
+      } else if (systemId === Groups.tech.systemId) {
+        menu.items = this._buildTechActivations(actor).items;
+      } else if (systemId === Groups.utility.systemId) {
+        menu.items = this._buildUtility(actor).items;
+      } else if (systemId === Groups.compconFlow.systemId && (actor.is_mech() || actor.is_npc())) {
+        menu.items = this._buildCompconFlow(actor).items;
+      } else if (systemId === Groups.skills.systemId && actor.is_pilot()) {
+        menu.items = this._buildSkills(actor).items;
       }
+      return fixupSmItems(menu);
     }
 
     _buildCompconFlow(actor: LancerMECH | LancerNPC) {
@@ -634,9 +555,9 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         items: [
           actions.stabilize,
           ...(actor.is_mech() ? [overcharge(actor)] : []),
-          actions.deploy_item,
-          actions.skirmish,
-          actions.barrage,
+          SimpleActionMacros.Deploy_Item,
+          SimpleActionMacros.Skirmish,
+          SimpleActionMacros.Barrage,
           macroInvade,
           missionRest,
         ],
@@ -681,16 +602,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       };
     }
 
-    _buildNpcAttacks(actor: LancerNPC): _SubMenuData {
-      const weapons = actor.loadoutHelper
-        .listLoadout()
-        .filter((i) => i.is_weapon())
-        .map(itemSubMenuData);
-      return {
-        items: [actions.skirmish, actions.barrage, ...weapons],
-      };
-    }
-
     _buildWeapons(actor: LancerMECH): _SubMenuData {
       let weaponItems = weaponsByMount(actor);
       let tabLabels = {
@@ -699,8 +610,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       };
       let items = {
         attack: [
-          actions.skirmish,
-          actions.barrage,
+          SimpleActionMacros.Skirmish,
+          SimpleActionMacros.Barrage,
           {
             isHeader: true,
             name: "Basic Attacks",
@@ -729,22 +640,10 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       let options: SubMenuActionItem[] = [
         ...systemInvades,
         ...pInvades,
-        {
-          id: "fragment-signal",
-          name: "Fragment Signal [Default]",
-          description:
-            "You feed false information, obscene messages, or phantom signals to your target's computing core. They become IMPAIRED and SLOWED until the end of their next turn.",
-        },
+        SimpleActionMacros.Fragment_Signal,
       ];
       const items: TabbedSubMenuItems = {
-        flow: [
-          macroInvade,
-          {
-            id: "basic-tech-attack",
-            name: "Basic Tech",
-            description: "You do a basic tech attack against edef.",
-          },
-        ],
+        flow: [macroInvade, SimpleActionMacros.Fragment_Signal],
         full: options.map<SubMenuActionItem>((o) => ({
           id: o.id,
           name: o.name,
@@ -809,8 +708,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
 
     override getDefaultAttributes() {
       return [
-        // "combatOnly": false,
-        // "hideInCombat": false,
         { path: "system.hp", label: "HP", color: "#2ca020", style: "bar", combatOnly: true },
         { path: "system.heat", label: "Heat", color: "#e61c34", style: "bar", combatOnly: true },
         {
@@ -820,7 +717,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           style: "bar",
           hideInCombat: true,
         },
-
         // style number = just the number, text number/max
         {
           path: "system.structure",
@@ -836,7 +732,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           style: "bar",
           combatOnly: true,
         },
-
         // Put your own saves in
         {
           path: "system.hull",
@@ -882,181 +777,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     getTrackableAttributes(actor: LancerActor): TrackableAttribute[] {
-      const paths = [];
-
-      const scan = (obj, prefix, depth = 0) => {
-        if (depth > 4) return;
-
-        for (const [key, value] of Object.entries(obj)) {
-          if (typeof value === "object" && value !== null) {
-            if ("value" in value && typeof value.value === "number") {
-              paths.push({
-                path: `${prefix}.${key}.value`,
-                label: key.charAt(0).toUpperCase() + key.slice(1),
-              });
-            } else {
-              scan(value, `${prefix}.${key}`, depth + 1);
-            }
-          }
-        }
-      };
-
-      if (actor.is_deployable()) {
-        return [
-          {
-            path: "system.hp.value",
-            label: "Hp",
-          },
-        ];
-      }
-
-      if (actor.is_npc()) {
-        return [
-          {
-            path: "system.hp.value",
-            label: "Hp",
-          },
-          {
-            path: "system.overshield.value",
-            label: "Overshield",
-          },
-          {
-            path: "system.heat.value",
-            label: "Heat",
-          },
-          {
-            path: "system.stress.value",
-            label: "Stress",
-          },
-          {
-            path: "system.structure.value",
-            label: "Structure",
-          },
-        ];
-      }
-
-      if (actor.is_pilot()) {
-        let active_mech = mechForPilot(actor);
-        //active_mech.system.loadout.frame.value.system.mechtype[0].
-        return [
-          {
-            path: "system.bond_state.xp.value",
-            label: "Xp",
-          },
-          {
-            path: "system.bond_state.stress.value",
-            label: "Stress",
-          },
-          {
-            path: "system.hp.value",
-            label: "Hp",
-          },
-          {
-            path: "system.callsign",
-            label: "Call Sign",
-          },
-          {
-            path: "system.background",
-            label: "Background",
-          },
-          {
-            path: "system.level",
-            label: "Level",
-          },
-          {
-            path: "name",
-            label: "Name",
-          },
-          {
-            path: "",
-            label: "Role",
-          },
-        ];
-      }
-
-      if (actor.is_mech()) {
-        paths.push(
-          {
-            path: "system.repairs.value",
-            label: "Repairs",
-          },
-          {
-            path: "system.hp.value",
-            label: "Hp",
-          },
-          {
-            path: "system.overshield.value",
-            label: "Overshield",
-          },
-          {
-            path: "system.heat.value",
-            label: "Heat",
-          },
-          {
-            path: "system.stress.value",
-            label: "Stress",
-          },
-          {
-            path: "system.structure.value",
-            label: "Structure",
-          },
-          {
-            path: "system.armor",
-            label: "Armor",
-          },
-          {
-            path: "system.core_energy",
-            label: "Core Power Available",
-          },
-          {
-            path: "system.core_active",
-            label: "Core Active",
-          },
-          {
-            path: "system.edef",
-            label: "E Defense",
-          },
-          {
-            path: "system.burn",
-            label: "Burn",
-          },
-          {
-            path: "system.agi",
-            label: "Agility",
-          },
-          {
-            path: "system.eng",
-            label: "Engineering",
-          },
-          {
-            path: "system.evasion",
-            label: "Evasion",
-          },
-          {
-            path: "system.hull",
-            label: "Hull",
-          },
-          {
-            path: "system.save",
-            label: "Save",
-          },
-          {
-            path: "system.sensor_range",
-            label: "Sensors",
-          },
-          {
-            path: "system.sys",
-            label: "Systems",
-          },
-        );
-        return paths;
-      }
-
-      if (actor?.system) {
-        scan(actor.system, "system");
-        // Actor talents too.
-      }
-      return paths;
+      const type = actor.type;
+      return attributeLooks[type];
     }
   }
 
