@@ -2,15 +2,22 @@ import { LancerActor, type LancerMECH } from "foundryvtt-lancer/actor/lancer-act
 import { ActionData } from "foundryvtt-lancer/models/bits/action";
 import {
   LancerBOND,
+  LancerCORE_BONUS,
   LancerFRAME,
   LancerItem,
+  LancerLICENSE,
+  LancerMECH_SYSTEM,
   LancerMECH_WEAPON,
+  LancerNPC_CLASS,
+  LancerNPC_FEATURE,
   LancerWEAPON_MOD,
 } from "foundryvtt-lancer/item/lancer-item";
-import { imgs } from "./images.js";
+import { imgs } from "./Images.js";
 import { logInvalidItem } from "./log.js";
 import { itemActionId, itemActionPath } from "./ActivatedItem.js";
+import type { EntryType } from "foundryvtt-lancer/enums.js";
 
+type EntryTypeValue = `${EntryType}`;
 // Copied from foundryvtt-lancer/enums, actual values get borked in foundry loading.
 export const ENTRY_TYPE = {
   CORE_BONUS: "core_bonus",
@@ -35,9 +42,13 @@ export const ENTRY_TYPE = {
   STATUS: "status",
   TALENT: "talent",
   BOND: "bond",
-};
+} as const satisfies Record<string, EntryTypeValue>;
 
-export const ENTRY_TYPE_IMG_MAP = {
+export type ENTRY_TYPE_VALUES = (typeof ENTRY_TYPE)[keyof typeof ENTRY_TYPE];
+
+type ItemMapper<SubType extends Item.SubType = Item.SubType> = (item: Item<SubType>) => ActionItem;
+
+export const ENTRY_TYPE_IMG_MAP: Record<keyof typeof ENTRY_TYPE, string> = {
   CORE_BONUS: imgs.lancer.corepower,
   DEPLOYABLE: imgs.lancer.deployable,
   FRAME: imgs.lancer.frame,
@@ -109,6 +120,7 @@ export const ACTIVATION_TAG_MAP = {
 
 type ActivationKey = keyof typeof ACTIVATION_TAG_MAP;
 type ActivationValue = (typeof ACTIVATION_TAG_MAP)[ActivationKey];
+
 const actionTags = Object.values(ACTIVATION_TAG_MAP) as ActivationValue[];
 type InvertedActivationMap = {
   [K in ActivationValue]: ActivationKey;
@@ -124,15 +136,6 @@ export type ActionItem = {
   subMenuItem: SubMenuActionItem;
 };
 
-//Throw in a flatmap
-export function byActionType(...activationType: (keyof typeof ACTIVATION_TAG_MAP)[]) {
-  return (a: ActionItem): SubMenuItem[] => {
-    // @ts-ignore
-    if (activationType.includes(a.action.activation)) return [a.subMenuItem];
-    return [];
-  };
-}
-
 /**
  *
  */
@@ -142,7 +145,6 @@ function la(): LancerAutomationsAPI {
 }
 
 export function isUsableItem(item: any) {
-  //TODO: Destroyed, Out of Charges, Recharging NPC features.
   switch (item.type) {
     case ENTRY_TYPE.NPC_FEATURE:
       return !(item.isRecharge() && !item.system.charged);
@@ -159,7 +161,6 @@ export function isUsableItem(item: any) {
     default:
       return true;
   }
-  return true;
 }
 
 /**
@@ -245,41 +246,41 @@ function coreSystem(item: LancerFRAME): ActionItem[] {
   return [coreAction, ...passives, ...actives, ...traits];
 }
 
+function modSubItem(m: LancerWEAPON_MOD) {
+  let { cost, description } = tagsCostAndDescription(m);
+
+  return {
+    id: m.id,
+    name: "^[Mod]" + m.name,
+    description: [m.system.effect, description].join(" "),
+    cost: cost,
+  };
+}
+
+function _weaponItem(weapon: LancerMECH_WEAPON) {
+  const system = weapon.system;
+  const destroyed = system.destroyed;
+  const p = system.active_profile;
+  const d = p.damage.map((d) => `${d.val} ${d.type}`).join("+");
+  const ranges = p.range.map((r) => r.formatted).join(" ");
+  let { cost, description: td } = tagsCostAndDescription(weapon);
+  return {
+    id: weapon.id,
+    name: destroyed
+      ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${weapon.name}</s>`
+      : weapon.name,
+    description: `${system.size} ${p.type}<br/>${d}<br/>${ranges}<br/>${td}`,
+    cost, //TODO: We can style cost so that it contains the Ranges/Threats/Damage  That is how SUH does 5e weapons
+    isExhausted: !isUsableItem(weapon),
+    uses: weapon.isLimited() && weapon.system.uses,
+  };
+}
+
 /**
  * Builds out the mechs weapons as a list with each mount as a header.
  * @param actor
  */
 export function weaponsByMount(actor: LancerMECH): SubMenuItem[] {
-  function modSubItem(m: LancerWEAPON_MOD) {
-    let { cost, description } = tagsCostAndDescription(m);
-
-    return {
-      id: m.id,
-      name: "^[Mod]" + m.name,
-      description: [m.system.effect, description].join(" "),
-      cost: cost,
-    };
-  }
-
-  function _weaponItem(weapon: LancerMECH_WEAPON) {
-    const system = weapon.system;
-    const destroyed = system.destroyed;
-    const p = system.active_profile;
-    const d = p.damage.map((d) => `${d.val} ${d.type}`).join("+");
-    const ranges = p.range.map((r) => r.formatted).join(" ");
-    let { cost, description: td } = tagsCostAndDescription(weapon);
-    return {
-      id: weapon.id,
-      name: destroyed
-        ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${weapon.name}</s>`
-        : weapon.name,
-      description: `${system.size} ${p.type}<br/>${d}<br/>${ranges}<br/>${td}`,
-      cost, //TODO: We can style cost so that it contains the Ranges/Threats/Damage  That is how SUH does 5e weapons
-      isExhausted: !isUsableItem(weapon),
-      uses: weapon.isLimited() && weapon.system.uses,
-    };
-  }
-
   const mounts = actor.system.loadout.weapon_mounts;
   if (!Array.isArray(mounts)) {
     logInvalidItem(mounts, actor, "buildWeapons");
@@ -299,7 +300,7 @@ export function weaponsByMount(actor: LancerMECH): SubMenuItem[] {
       }
       return m.slots.length > 0 && !m.bracing;
     })
-    .flatMap<SubMenuItem>((m, mountIdx) => {
+    .flatMap<SubMenuItem>((m) => {
       return [
         {
           isHeader: true,
@@ -368,11 +369,12 @@ export function getActorActionItems(actor?: LancerActor): ActionItem[] {
   let loadOut = actor.loadoutHelper.listLoadout();
   return loadOut.flatMap((item): ActionItem[] => {
     const itemId = item.id;
-    const acts = la().getItemActions(item);
     const options: ActionItem[] = [];
     if (item.is_frame()) {
       options.push(...coreSystem(item));
     }
+    (item as LancerMECH_SYSTEM).system.actions;
+    const acts = la().getItemActions(item) as ActionData[];
     //const tags = await la().getItemTags_WithBonus(item, actor);
     const { cost, description } = tagsCostAndDescription(item);
     const usable = isUsableItem(item);
@@ -381,27 +383,9 @@ export function getActorActionItems(actor?: LancerActor): ActionItem[] {
     const name = usable
       ? item.name
       : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
-
-    if (("deployables" in item.system && item.system.deployables.length > 0) || item.is_frame()) {
-      //item.system.deployables[0]
-      img = imgs.lancer.deployable;
-      const d = la()
-        .getItemDeployables(item, actor)
-        .map((d) => ({
-          item,
-          action: {
-            activation: "Quick",
-          },
-          subMenuItem: {
-            id: "",
-            name: name,
-          },
-        }));
-      // Just hit the deployable button please.  To find mines I gotta go into the compendiums.
-    }
     if (acts.length > 0) {
       options.push(
-        ...(acts as ActionData[]).map((action, idx) => {
+        ...acts.map((action, idx) => {
           let fmtName = `${action.name} [${item.name}]`;
           if (action.name === "Action") {
             fmtName = item.name;

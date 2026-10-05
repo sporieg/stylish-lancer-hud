@@ -2,7 +2,7 @@
  * This file contains the helper methods to deal with pathing to/from items with activations.
  */
 import { LancerActor } from "foundryvtt-lancer/actor/lancer-actor";
-import { pilotForMech } from "./HudActorManagement.js";
+import { pilotForMech } from "./adapters/helpers.js";
 import { LancerItem } from "foundryvtt-lancer/item/lancer-item";
 
 type IndexedPath = `system.traits.${number}.actions.${number}`;

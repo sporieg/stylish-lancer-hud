@@ -9,20 +9,20 @@ import type { ActionData } from "foundryvtt-lancer/models/bits/action";
 import { debug } from "./log.js";
 import { LancerToken } from "foundryvtt-lancer/token";
 import { LancerCombatant } from "foundryvtt-lancer/combat/lancer-combat";
-import { imgs } from "./images.js";
+import { imgs } from "./Images.js";
 import {
   ActionItem,
+  ACTIVATION_TAG_MAP,
   ActivationLabels,
   ActivationType,
   bondSubMenuData,
-  byActionType,
   getActorActionItems,
   itemSubMenuData,
   RemapAction,
   weaponsByMount,
 } from "./ActivationType.js";
 import { SimpleActionMacros } from "./SimpleActions.js";
-import { pilotForMech } from "./HudActorManagement.js";
+import { mechForPilot, pilotForMech } from "./adapters/helpers.js";
 import { getItem } from "./ActivatedItem.js";
 
 const isInvade = (a: Pick<ActionData, "activation">) => a.activation === "Invade";
@@ -327,6 +327,14 @@ const get = (obj, path, defaultValue = undefined) => {
   const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
   return result === undefined || result === obj ? defaultValue : result;
 };
+
+function byActionType(...activationType: (keyof typeof ACTIVATION_TAG_MAP)[]) {
+  return (a: ActionItem): SubMenuItem[] => {
+    // @ts-ignore
+    if (activationType.includes(a.action.activation)) return [a.subMenuItem];
+    return [];
+  };
+}
 
 /**
  * Categories
@@ -873,7 +881,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       ];
     }
 
-    getTrackableAttributes(actor: LancerActor): { path: string; label: string }[] {
+    getTrackableAttributes(actor: LancerActor): TrackableAttribute[] {
       const paths = [];
 
       const scan = (obj, prefix, depth = 0) => {
@@ -892,24 +900,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           }
         }
       };
-
-      // oxlint-disable-next-line no-unused-vars
-      function pilotTalents(prefix: string, actor: LancerPILOT) {
-        let items = [...actor.items] as LancerItem[];
-        const acc = [];
-        // Counters are a map how do we path it?
-        items.forEach((t, key) => {
-          if (t.is_talent()) {
-            t.system.counters.forEach((c, cidx) => {
-              acc.push({
-                path: `${prefix}.items[${key}].system.counters[${cidx}]`,
-                label: c.name,
-              });
-            });
-          }
-        });
-        return acc;
-      }
 
       if (actor.is_deployable()) {
         return [
@@ -946,6 +936,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       }
 
       if (actor.is_pilot()) {
+        let active_mech = mechForPilot(actor);
+        //active_mech.system.loadout.frame.value.system.mechtype[0].
         return [
           {
             path: "system.bond_state.xp.value",
@@ -956,12 +948,28 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
             label: "Stress",
           },
           {
-            path: "system.bond_state.burdens.0.value",
-            label: "0",
-          },
-          {
             path: "system.hp.value",
             label: "Hp",
+          },
+          {
+            path: "system.callsign",
+            label: "Call Sign",
+          },
+          {
+            path: "system.background",
+            label: "Background",
+          },
+          {
+            path: "system.level",
+            label: "Level",
+          },
+          {
+            path: "name",
+            label: "Name",
+          },
+          {
+            path: "",
+            label: "Role",
           },
         ];
       }

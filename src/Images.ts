@@ -1,4 +1,6 @@
 // Map to: systems/lancer/assets/icons/white
+import { ActionData } from "foundryvtt-lancer/models/bits/action.js";
+
 const lancer_imgs_root = "systems/lancer/assets/icons/white/";
 const la_imgs_root = "modules/lancer-automations/icons/";
 const lancer_imgs = {
@@ -198,6 +200,24 @@ const la_imgs = {
   "up-card": `${la_imgs_root}up-card.svg`,
   vote: `${la_imgs_root}vote.svg`,
 };
+
+export function getActivationIcon(action: ActionData) {
+  if (/grenade/i.test(action?.name ?? "")) return "systems/lancer/assets/icons/white/grenade.svg";
+  const isTech = action?.tech_attack === true;
+  const activation = action?.activation || "";
+  const activationLower = activation.toLowerCase();
+  if (isTech || activationLower.includes("tech")) {
+    if (activationLower.includes("full")) return "systems/lancer/assets/icons/tech_full.svg";
+    return "systems/lancer/assets/icons/tech_quick.svg";
+  }
+  if (activationLower.includes("full")) return "mdi mdi-hexagon-slice-6";
+  if (activationLower.includes("protocol")) return "systems/lancer/assets/icons/protocol.svg";
+  if (activationLower.includes("free")) return "systems/lancer/assets/icons/free_action.svg";
+  if (activationLower.includes("reaction")) return "systems/lancer/assets/icons/reaction.svg";
+  if (activationLower.includes("quick")) return "mdi mdi-hexagon-slice-3";
+  if (activationLower.includes("invade")) return "modules/lancer-automations/icons/cpu-shot.svg";
+  return null;
+}
 
 export const imgs = {
   lancer: lancer_imgs,

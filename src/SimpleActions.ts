@@ -1,5 +1,5 @@
 import { ActivationType } from "./ActivationType.js";
-import { imgs } from "./images.js";
+import { imgs } from "./Images.js";
 
 export const SimpleActionMacros = {
   Reactor_Explosion: {
