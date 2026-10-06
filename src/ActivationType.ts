@@ -11,9 +11,12 @@ import {
 import { imgs } from "./Images.js";
 import { logInvalidItem } from "./log.js";
 import { itemActionId, itemActionPath } from "./ActivatedItem.js";
-import type { EntryType } from "foundryvtt-lancer/enums.js";
+import type { EntryType, RangeType, DamageType, AttackType } from "foundryvtt-lancer/enums.js";
 
 type EntryTypeValue = `${EntryType}`;
+type RangeTypeValue = `${RangeType}`;
+type DamageTypeValue = `${DamageType}`;
+type AttackTypeValue = `${AttackType}`;
 // Copied from foundryvtt-lancer/enums, actual values get borked in foundry loading.
 export const ENTRY_TYPE = {
   CORE_BONUS: "core_bonus",
@@ -40,8 +43,6 @@ export const ENTRY_TYPE = {
   BOND: "bond",
 } as const satisfies Record<string, EntryTypeValue>;
 export type SheetTypes = Extract<EntryTypeValue, "mech" | "npc" | "pilot" | "deployable">;
-
-type ItemMapper<SubType extends Item.SubType = Item.SubType> = (item: Item<SubType>) => ActionItem;
 
 export const ENTRY_TYPE_IMG_MAP: Record<keyof typeof ENTRY_TYPE, string> = {
   CORE_BONUS: imgs.lancer.corepower,
@@ -126,9 +127,11 @@ const INVERTED_ACTIVATION_TAG_MAP = Object.fromEntries(
 
 export type ActionItem = {
   item: LancerItem;
-  action: Pick<ActionData, "activation">;
-  // A path to reach back to your action on the item.
-  subMenuItem: SubMenuActionItem;
+  actions: {
+    action: Pick<ActionData, "activation">;
+    // A path to reach back to your action on the item.
+    subMenuItem: SubMenuActionItem;
+  }[];
 };
 
 /**
@@ -139,24 +142,21 @@ function la(): LancerAutomationsAPI {
   return game.modules.get("lancer-automations").api as LancerAutomationsAPI;
 }
 
-export function isUsableItem(item: any) {
-  switch (item.type) {
-    case ENTRY_TYPE.NPC_FEATURE:
-      return !(item.isRecharge() && !item.system.charged);
-    case ENTRY_TYPE.MECH_SYSTEM:
-    case ENTRY_TYPE.MECH_WEAPON:
-    case ENTRY_TYPE.WEAPON_MOD:
-      return !item.system.destroyed;
-    case ENTRY_TYPE.PILOT_WEAPON:
-      return !(
-        (item.isLoading() && !item.system.loaded) ||
-        (item.isLimited() && !item.system.uses.value)
-      );
-    //Bonds talents.skills etc are always usables
-    default:
-      return true;
-  }
+export function isUsableItem(item: LancerItem) {
+  let system = item.system;
+
+  if ("destroyed" in system && system.destroyed) return false;
+  if (item.is_npc_feature() && item.system.charged) return false;
+  if ("isLoading" in system && item.isLoading() && "loaded" in system && !system.loaded)
+    return false;
+  if ("uses" in system && system.uses.value <= 0) return false;
+  return true;
 }
+//Todo: Wrap numbers for tags and stuff in public/fonts/compcon/glyphs.css
+/*function threatAndRange() {
+  "<i class=\"cci cci-line\"></i>";
+  return '<i class="cci cci-threat"></i>';
+}*/
 
 /**
  * I could put the help on system, but I think there are enough potential edge cases
@@ -191,54 +191,53 @@ export function tagsCostAndDescription(value: LancerItem) {
 }
 
 // Frames are intrinsically special and contain whole trees of actions.
-function coreSystem(item: LancerFRAME): ActionItem[] {
+function coreSystem(item: LancerFRAME): ActionItem {
   const itemId = item.id;
   const core_system = item.system.core_system;
   const coreAction: ActionItem = {
     item,
-    action: {
-      activation: core_system.activation,
-    },
-    subMenuItem: {
-      id: itemActionPath(itemId, "system.core_system"),
-      img: imgs.lancer.corepower,
-      name: core_system.active_name,
-      description: [core_system.description, core_system.active_effect].join("<br/>"),
-    },
-  };
-  const passives = core_system.passive_actions.map<ActionItem>((action, idx) => ({
-    item,
-    action,
-    subMenuItem: {
-      id: itemActionId(itemId, idx, "system.core_system.passive_actions"),
-      img: item.img,
-      name: action.name,
-      description: action.detail,
-    },
-  }));
-  const actives = core_system.active_actions.map<ActionItem>((action, idx) => ({
-    item,
-    action,
-    subMenuItem: {
-      id: itemActionId(itemId, idx, "system.core_system.active_actions"),
-      img: imgs.lancer.mech,
-      name: action.name,
-      description: action.detail,
-    },
-  }));
-  const traits = item.system.traits.flatMap((p, idx) =>
-    p.actions.map((action, adx) => ({
-      item,
-      action,
-      subMenuItem: {
-        id: itemActionPath(itemId, `system.traits.${idx}.actions.${adx}`),
-        img: imgs.lancer.mech,
-        name: p.name,
-        description: action.detail,
+    actions: [
+      {
+        action: core_system,
+        subMenuItem: {
+          id: itemActionPath(itemId, "system.core_system"),
+          img: imgs.lancer.corepower,
+          name: core_system.active_name,
+          description: [core_system.description, core_system.active_effect].join("<br/>"),
+        },
       },
-    })),
-  );
-  return [coreAction, ...passives, ...actives, ...traits];
+      ...core_system.passive_actions.map<ActionItem["actions"][number]>((action, idx) => ({
+        action,
+        subMenuItem: {
+          id: itemActionId(itemId, idx, "system.core_system.passive_actions"),
+          img: item.img,
+          name: action.name,
+          description: action.detail,
+        },
+      })),
+      ...core_system.active_actions.map<ActionItem["actions"][number]>((action, idx) => ({
+        action,
+        subMenuItem: {
+          id: itemActionId(itemId, idx, "system.core_system.active_actions"),
+          img: imgs.lancer.mech,
+          name: action.name,
+          description: action.detail,
+        },
+      })),
+      ...item.system.traits.flatMap((p, idx) =>
+        p.actions.map<ActionItem["actions"][number]>((action, adx) => ({
+          action,
+          subMenuItem: {
+            id: itemActionPath(itemId, `system.traits.${idx}.actions.${adx}`),
+            img: imgs.lancer.mech,
+            name: p.name,
+            description: action.detail,
+          },
+        })),
+      ),
+    ],
+  };
+  return coreAction;
 }
 
 function modSubItem(m: LancerWEAPON_MOD) {
@@ -251,6 +250,8 @@ function modSubItem(m: LancerWEAPON_MOD) {
     cost: cost,
   };
 }
+
+//const Ranges: Record<RangeTypeValue, string> = {};
 
 function _weaponItem(weapon: LancerMECH_WEAPON) {
   const system = weapon.system;
@@ -345,6 +346,10 @@ export function bondSubMenuData(bond: LancerBOND): SubMenuItem[] {
     });
 }
 
+function formatName(item: LancerItem) {
+  const usable = isUsableItem(item);
+}
+
 /**
  * Slice up the loadout into something flatter and easier to work with for a menu.
  *
@@ -362,64 +367,51 @@ export function getActorActionItems(actor?: LancerActor): ActionItem[] {
   //TODO: Deployable e.g.  A mine in addition to grenade.
   if (!actor) return [];
   let loadOut = actor.loadoutHelper.listLoadout();
-  return loadOut.flatMap((item): ActionItem[] => {
-    const itemId = item.id;
-    const options: ActionItem[] = [];
-    if (item.is_frame()) {
-      options.push(...coreSystem(item));
-    }
-    (item as LancerMECH_SYSTEM).system.actions;
-    const acts = la().getItemActions(item) as ActionData[];
-    //const tags = await la().getItemTags_WithBonus(item, actor);
-    const { cost, description } = tagsCostAndDescription(item);
-    const usable = isUsableItem(item);
-    //Try and match to a light theme image if one matches well.
-    let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
-    const name = usable
-      ? item.name
-      : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
-    if (acts.length > 0) {
-      options.push(
-        ...acts.map((action, idx) => {
-          let fmtName = `${action.name} [${item.name}]`;
-          if (action.name === "Action") {
-            fmtName = item.name;
-          }
-          const name = (item.system as any).destroyed
-            ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
-            : fmtName;
-          return {
+  return (
+    loadOut
+      // They have special rendering and npc is defered work.
+      .filter((i) => !(i.is_mech_weapon() || i.is_weapon_mod() || i.is_npc_feature()))
+      .flatMap((item): ActionItem[] => {
+        const itemId = item.id;
+        const options: ActionItem[] = [];
+        if (item.is_frame()) {
+          options.push(coreSystem(item));
+        }
+        const acts = la().getItemActions(item) as ActionData[];
+        const { cost, description } = tagsCostAndDescription(item);
+        const usable = isUsableItem(item);
+        //Try and match to a light theme image if one matches well.
+        let img = ENTRY_TYPE_IMG_MAP[item.type.toUpperCase()] ?? item.img;
+        const name = usable
+          ? item.name
+          : `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${item.name}</s>`;
+        if (acts.length > 0) {
+          options.push({
             item,
-            action,
-            subMenuItem: {
-              id: itemActionId(itemId, idx, "system.actions"),
-              name,
-              img,
-              description: action.detail,
-              cost,
-              isExhausted: !usable,
-              uses: item.isLimited() && item.system.uses,
-            },
-          };
-        }),
-      );
-    } else if (item.is_npc_feature()) {
-      const tg = item.system.tags.find((t) => actionTags.includes(t.val));
-      const activation = INVERTED_ACTIVATION_TAG_MAP[tg?.val as ActivationValue];
-      if (activation) {
-        options.push({
-          item,
-          action: {
-            activation: activation as any,
-          },
-          subMenuItem: {
-            id: item.id,
-            name: item.name,
-            description: item.system.effect,
-          },
-        });
-      }
-    }
-    return options;
-  });
+            actions: acts.map((action, idx) => {
+              let fmtName = `${action.name}`;
+              if (action.name === "Action") {
+                fmtName = item.name;
+              }
+              const name = (item.system as any).destroyed
+                ? `<s class="horus--subtle" style="opacity:0.7;color:#e50000;">${fmtName}</s>`
+                : fmtName;
+              return {
+                action,
+                subMenuItem: {
+                  id: itemActionId(itemId, idx, "system.actions"),
+                  name,
+                  img,
+                  description: action.detail,
+                  cost,
+                  isExhausted: !usable,
+                  uses: item.isLimited() && item.system.uses,
+                },
+              };
+            }),
+          });
+        }
+        return options;
+      })
+  );
 }

@@ -451,7 +451,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return item.sheet.render(true);
     }
 
-    // Todo, we can do execute action for our non item caes.
     override async executeAction(actor: LancerActor, actionId: string) {
       switch (actionId) {
         case Groups.activate.id:
@@ -471,7 +470,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     override getActionCategories(actor: LancerActor): ActionMenuCategory[] {
-      // @ts-ignore this is if you set the config globally, why though?  You don't have actor method access then, just macro.
       let customized = super.getActionCategories(actor);
       const basicActions = this.getCoreLancerActions(actor).map((a, idx) => {
         if (a.type == "submenu") {
@@ -631,24 +629,22 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     _buildInvades(actor: LancerMECH): SubMenuData {
-      const systemInvades = getActorActionItems(actor)
-        .filter((a) => isInvade(a.action))
-        .map((a) => a.subMenuItem);
-      let pInvades = getActorActionItems(pilotForMech(actor))
-        .filter((a) => isInvade(a.action))
-        .map((a) => a.subMenuItem);
-      let options: SubMenuActionItem[] = [
-        ...systemInvades,
-        ...pInvades,
-        SimpleActionMacros.Fragment_Signal,
-      ];
+      const invades = [...getActorActionItems(actor), ...getActorActionItems(pilotForMech(actor))]
+        .map((ai) => ({
+          item: ai.item,
+          actions: ai.actions.filter((a) => isInvade(a.action)),
+        }))
+        .filter((ai) => ai.actions.length > 0)
+        .flatMap<SubMenuItem>((ai) => [
+          {
+            isHeader: true,
+            name: ai.item.name,
+          },
+          ...ai.actions.map((a) => a.subMenuItem),
+        ]);
       const items: TabbedSubMenuItems = {
         flow: [macroInvade, SimpleActionMacros.Fragment_Signal],
-        full: options.map<SubMenuActionItem>((o) => ({
-          id: o.id,
-          name: o.name,
-          description: o.description,
-        })),
+        full: [SimpleActionMacros.Fragment_Signal, ...invades],
       };
       return {
         title: "Invade Options",
@@ -662,7 +658,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     _buildTechActivations(actor: LancerActor): SubMenuData {
-      // Orderd according to the UI and order is maintained throughout the method.
+      // ToDO: We should also add the item as a header for each action/pair of actins.
       const keyItems: Record<keyof typeof ActivationLabels, SubMenuItem[]> = Object.fromEntries(
         Object.keys(ActivationLabels).map((k) => [k, []]),
       ) as Record<keyof typeof ActivationLabels, SubMenuItem[]>;
@@ -676,9 +672,12 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         actions.push(...pactions);
       }
       actions
-        .filter((a) => {
-          return !(a.item.is_weapon() || a.item.is_weapon_mod() || isInvade(a.action));
-        })
+        .map((ai) => ({
+          item: ai.item,
+          actions: ai.actions.filter((a) => !isInvade(a.action)),
+        }))
+        .filter((ai) => ai.actions.length > 0)
+        .flatMap((ai) => ai.actions)
         .forEach((at) => {
           const activ = at.action.activation;
           const mapped = RemapAction[activ];
