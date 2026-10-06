@@ -11,9 +11,16 @@ import {
 import { imgs } from "./Images.js";
 import { logInvalidItem } from "./log.js";
 import { itemActionId, itemActionPath } from "./ActivatedItem.js";
-import type { EntryType, RangeType, DamageType, AttackType } from "foundryvtt-lancer/enums.js";
+import type {
+  EntryType,
+  RangeType,
+  DamageType,
+  AttackType,
+  ActivationType,
+} from "foundryvtt-lancer/enums.js";
 
-type EntryTypeValue = `${EntryType}`;
+export type EntryTypeValue = `${EntryType}`;
+export type ActivationTypeValue = `${ActivationType}`;
 type RangeTypeValue = `${RangeType}`;
 type DamageTypeValue = `${DamageType}`;
 type AttackTypeValue = `${AttackType}`;
@@ -88,7 +95,7 @@ export const ActivationLabels = {
   Free: "Free",
 };
 
-export const ActivationType = {
+export const ActivationTypeIcon = {
   Core: "Core Power",
   None: "None",
   Passive: "Passive",
@@ -149,7 +156,7 @@ export function isUsableItem(item: LancerItem) {
   if (item.is_npc_feature() && item.system.charged) return false;
   if ("isLoading" in system && item.isLoading() && "loaded" in system && !system.loaded)
     return false;
-  if ("uses" in system && system.uses.value <= 0) return false;
+  if ("uses" in system && system.uses.value <= 0 && system.uses.max > 0) return false;
   return true;
 }
 //Todo: Wrap numbers for tags and stuff in public/fonts/compcon/glyphs.css
@@ -301,7 +308,7 @@ export function weaponsByMount(actor: LancerMECH): SubMenuItem[] {
         {
           isHeader: true,
           name: m.type,
-          cost: ActivationType.Quick,
+          cost: ActivationTypeIcon.Quick,
         },
         ...m.slots.flatMap((s) => {
           if (!s.weapon) return [];

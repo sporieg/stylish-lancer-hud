@@ -12,7 +12,8 @@ import {
   ActionItem,
   ACTIVATION_TAG_MAP,
   ActivationLabels,
-  ActivationType,
+  ActivationTypeIcon,
+  ActivationTypeValue,
   bondSubMenuData,
   ENTRY_TYPE,
   getActorActionItems,
@@ -32,7 +33,7 @@ let macroInvade: SubMenuActionItem = {
   id: "macro-o3nZI3EidYMVc9UX",
   name: "Invasion Flow",
   img: imgs.lancer.tech_quick,
-  cost: ActivationType.QuickTech + ActivationType.FullTech,
+  cost: ActivationTypeIcon.QuickTech + ActivationTypeIcon.FullTech,
   description: "Trigger the invasion flow chart",
 };
 
@@ -132,14 +133,14 @@ const actions = {
   stabilize: {
     id: "macro-k4o9aWoJTVb2sd8a",
     name: `Stabilize`,
-    cost: ActivationType.Full,
+    cost: ActivationTypeIcon.Full,
     img: imgs.lancer.marker,
     description: `When you STABILIZE, you enact emergency protocols to purge your mech’s systems of excess heat, repair your chassis where you can, or eliminate hostile code.`,
   },
   overcharge: {
     id: "overcharge",
     name: "Overcharge",
-    cost: ActivationType.Free,
+    cost: ActivationTypeIcon.Free,
     img: "systems/lancer/assets/icons/macro-icons/overcharge.svg",
     description: `Once per turn, you can OVERCHARGE your mech, allowing you to make any quick action as a free action – even actions you have already taken this turn.`,
   },
@@ -147,21 +148,21 @@ const actions = {
     id: "basic-attack-improvised",
     name: "Improvised Attack",
     img: imgs.lancer.mech_weapon,
-    cost: ActivationType.Full,
+    cost: ActivationTypeIcon.Full,
     description:
       "Make a melee or ranged attack using a non-weapon object or piece of terrain. On a hit, deal 1d6 AP kinetic damage.",
   },
   basic_attack: {
     id: "basic-attack",
     name: `Basic Attack`,
-    cost: ActivationType.Quick,
+    cost: ActivationTypeIcon.Quick,
     img: imgs.la.underhand,
     description: "Just roll to hit, useful for grapple and the likes.",
   },
   basic_ram: {
     id: "basic-attack-ram",
     name: `Ram Attack`,
-    cost: ActivationType.Quick,
+    cost: ActivationTypeIcon.Quick,
     img: imgs.la.ram,
     description: "Melee attack to ram your enemy",
   },
@@ -169,7 +170,7 @@ const actions = {
     id: "basic-attack-ram",
     name: `Grapple Attack`,
     img: imgs.la.grappling,
-    cost: ActivationType.Quick,
+    cost: ActivationTypeIcon.Quick,
     description: "Melee attack to grapple your enemy",
   },
 } satisfies ActionMap;
@@ -275,8 +276,8 @@ const CompconFLow = (actor: LancerActor) => {
     hasTabs: true,
     tabLabels: {
       protocol: "Protocol",
-      quick: `${ActivationType.Quick}Quick`,
-      full: `${ActivationType.Full}Full`,
+      quick: `${ActivationTypeIcon.Quick}Quick`,
+      full: `${ActivationTypeIcon.Full}Full`,
       free: "Free",
       reactions: "Reactions",
     },
@@ -338,11 +339,19 @@ const get = (obj, path, defaultValue = undefined) => {
   return result === undefined || result === obj ? defaultValue : result;
 };
 
-function byActionType(...activationType: (keyof typeof ACTIVATION_TAG_MAP)[]) {
-  return (a: ActionItem): SubMenuItem[] => {
-    // @ts-ignore
-    if (activationType.includes(a.action.activation)) return [a.subMenuItem];
-    return [];
+function byActionType(...activationType: ActivationTypeValue[]) {
+  return (a: ActionItem): [SubMenuHeaderItem, ...SubMenuActionItem[]] | [] => {
+    const validationActions = a.actions.filter((at) =>
+      activationType.includes(at.action.activation),
+    );
+    if (validationActions.length === 0) return [];
+    return [
+      {
+        name: a.item.name,
+        isHeader: true,
+      },
+      ...validationActions.map((a) => a.subMenuItem),
+    ];
   };
 }
 
@@ -376,9 +385,63 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       });
     }
 
-    /*    override updateAttribute(actor: LancerActor, path: string, input: string) {
-      return super.updateAttribute(actor, path, input);
-    }*/
+    getResourceForEdit(actor: LancerActor, itemId: string) {
+      //If itemId is a macro, remove it.  There is a bug in SUH where it never opens the normal macro method.
+      if (itemId.startsWith("macro-")) {
+        const macroId = itemId.replace("macro-", "");
+        // @ts-ignore
+        const existingMacros: string[] = actor.getFlag("stylish-action-hud", "macros") || [];
+        const exists = existingMacros.find((id) => id !== macroId);
+        // You know I really should check if the macro exists and something the player dropepd on.
+        if (exists) {
+          // @ts-ignore
+          StylishAction.removeMacro(macroId);
+        }
+      }
+      const item = (actor.items.get(itemId, {
+        strict: false,
+      }) ?? getItem(actor, itemId)[0]) as LancerItem | null;
+      if (item) {
+        if (
+          item.isLimited() &&
+          item.system.uses &&
+          (item.system.uses.max || item.system.uses.value > 0)
+        ) {
+          return {
+            itemId: item.id,
+            isItem: true,
+            itemName: item.name,
+
+            label: "Uses",
+            value: item.system.uses.value ?? 0,
+            max: item.system.uses.max,
+            path: "system.uses.value",
+            isSpent: false,
+          };
+        } /*
+        if(item.isLoading() && item.is_mech_weapon()) {
+          return {
+            itemId: item.id,
+            isItem: true,
+            itemName: item.name,
+            label: "Loaded",
+            //max: 1,
+            //value: item.system.loaded ? 1 : 0,
+            isSpent: !item.system.loaded,
+            path: "system.loaded"
+          }
+        }
+        return {
+          itemName: item.name,
+          lebel: "Just a man",
+          itemId: item.id,
+          isItem: false,
+          isSpent: false
+        }*/
+        return null; //What should even happy when you set the value of Hacker 1 to 7?
+      }
+      return null;
+    }
 
     override getConditions(actor: LancerActor) {
       return (actor.temporaryEffects || [])
@@ -429,6 +492,20 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return null;
     }
 
+    /**
+     * The ordering of checks is very specific.  A action subm menu item could be many things.
+     * In order we go
+     *
+     * * Macros.
+     * * Specific menu actions like overcharge.
+     * * Mech core system, that is not other sub items like passive/active.
+     * * Pathed mech items that have an targeted internal activation.
+     * * Generic items with one real use like skill/bond.
+     * * Finally, anything falling back to generic activate.
+     * @param actor
+     * @param itemId
+     * @param _event
+     */
     override async useItem(actor: LancerActor, itemId: string, _event = null) {
       const item = actor.items.get(itemId, {
         strict: false,
@@ -436,7 +513,10 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
 
       // Send macros to our base adapter.
       if (itemId.startsWith("macro-")) return super.useItem(actor, itemId);
+
       if (itemId === actions.overcharge.id) return actor.beginOverchargeFlow();
+      if (itemId.startsWith("basic-attack")) return actor.beginBasicAttackFlow("Basic Attack");
+      if (itemId.startsWith("basic-tech")) return actor.beginBasicTechAttackFlow("Basic Tech");
       // We built an encoded id for system activations. Go specialized to general-purpose system flows.
       if (
         itemId.includes("system.core_system") &&
@@ -446,22 +526,25 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         return activateCoreSystem(actor, itemId);
       }
       if (itemId.includes("system")) return activateSystem(actor, itemId);
-      if (itemId.startsWith("basic-attack")) return actor.beginBasicAttackFlow("Basic Attack");
-      if (itemId.startsWith("basic-tech")) return actor.beginBasicTechAttackFlow("Basic Tech");
       if (!item) {
         ui.notifications?.warn(`Item not found: ${itemId}`);
         return;
       }
+      const hasActions = item.hasActions() && item.system.actions.length > 0;
       if (item.is_weapon()) return item.beginWeaponAttackFlow();
-      if (item.is_weapon_mod()) return item.beginActivationFlow();
       if (item.is_mech_system()) return item.beginSystemFlow();
       if (item.is_skill()) return item.beginSkillFlow();
       if (item.is_bond()) return item.beginBondPowerFlow(0);
+      if (item.is_weapon_mod() && hasActions) {
+        return item.beginActivationFlow();
+      }
       return item.sheet.render(true);
     }
 
     override async executeAction(actor: LancerActor, actionId: string) {
-      switch (actionId) {
+      const categories = this.getActionCategories(actor);
+      const category = categories.find((entry) => entry.id === actionId);
+      switch (category.systemId) {
         case Groups.activate.systemId:
           const combatant = getCombatant(actor);
           // @ts-ignore
@@ -508,25 +591,25 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       systemId: string,
       menuData: ActionMenuCategory,
     ): SubMenuData {
-      // fixupSmItems(subMenuData);
-      const menu: SubMenuData = {
-        title: menuData.label,
-        items: [],
-      };
+      let menu: _SubMenuData | undefined;
       if (systemId === Groups.attack.systemId && actor.is_mech()) {
-        menu.items = this._buildWeapons(actor).items;
+        menu = this._buildWeapons(actor);
       } else if (systemId === Groups.invade.systemId && actor.is_mech()) {
-        menu.items = this._buildInvades(actor).items;
+        menu = this._buildInvades(actor);
       } else if (systemId === Groups.tech.systemId) {
-        menu.items = this._buildTechActivations(actor).items;
+        menu = this._buildTechActivations(actor);
       } else if (systemId === Groups.utility.systemId) {
-        menu.items = this._buildUtility(actor).items;
+        menu = this._buildUtility(actor);
       } else if (systemId === Groups.compconFlow.systemId && (actor.is_mech() || actor.is_npc())) {
-        menu.items = this._buildCompconFlow(actor).items;
+        menu = this._buildCompconFlow(actor);
       } else if (systemId === Groups.skills.systemId && actor.is_pilot()) {
-        menu.items = this._buildSkills(actor).items;
+        menu = this._buildSkills(actor);
       }
-      return fixupSmItems(menu);
+
+      return fixupSmItems({
+        ...(menu ?? { items: [] }),
+        title: menuData.label,
+      });
     }
 
     _buildCompconFlow(actor: LancerMECH | LancerNPC) {
@@ -594,8 +677,9 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
               id: `macro-${macro.id}`,
               name: macro.name,
               img: macro.img,
+              //isPersonal: true,
+              //customCatIndex: 0,
               cost: "",
-              // 우클릭 설명 현지화
               description: game.i18n.localize("IBHUD.UI.RightClickRemove"),
             });
           }

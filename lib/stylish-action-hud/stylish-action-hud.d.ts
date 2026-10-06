@@ -153,10 +153,43 @@ interface SubMenuData extends Record<string, unknown> {
   subTabLabels?: Record<string, Record<string, string>>;
 }
 
+type ResourceEdit = {
+  itemName: string;
+  label: string;
+  value: number;
+  max: number | undefined;
+  path: string;
+  isItem: false;
+};
+
+type UsesEdit = {
+  itemName: string;
+  label: string;
+  value: number;
+  max: number | undefined;
+  path: string;
+  isSpent: boolean;
+  isItem: true;
+  itemId: string;
+};
+
+type QuantityEdit = {
+  itemName: string;
+  label: string;
+  value: number;
+  max: null;
+  path: "system.quantity";
+  isItem: true;
+  itemId: string;
+};
+
+type ResourceForEdit = ResourceEdit | UsesEdit | QuantityEdit;
+
 interface SystemAdapterInstance<T> {
   systemId: string;
   getStats(actor: T, configAttributes: AttributeConfig[]): HudStat[];
   updateAttribute(actor: T, path: string, input: string): Promise<void>;
+  getResourceForEdit(actor: T, itemId: string): MaybePromise<ResourceForEdit> | null;
   getConditions(actor: T): ConditionData[];
   removeCondition(actor: T, conditionId: string): Promise<void>;
   resolveQuickSlotData(actor: T, itemId: string): QuickSlotData | null;
