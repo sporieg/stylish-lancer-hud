@@ -14,10 +14,10 @@ import {
   ActivationLabels,
   ActivationType,
   bondSubMenuData,
+  ENTRY_TYPE,
   getActorActionItems,
   itemSubMenuData,
   RemapAction,
-  SheetTypes,
   weaponsByMount,
 } from "./ActivationType.js";
 import { SimpleActionMacros } from "./SimpleActions.js";
@@ -51,6 +51,10 @@ const Groups = {
     label: "Turn Flow",
     icon: "cci cci-activate",
     type: "submenu",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
   skills: {
     id: "skills",
@@ -58,20 +62,10 @@ const Groups = {
     label: "Skills",
     icon: "cci cci-skill",
     type: "submenu",
-  },
-  hase: {
-    id: "hase",
-    systemId: "pilot-hase",
-    label: "Stats",
-    icon: "cci cci-skill",
-    type: "submenu",
-  },
-  attacks: {
-    id: "attacks",
-    systemId: "attacks",
-    label: "Attacks",
-    icon: "cci cci-role-striker",
-    type: "submenu",
+    visibility: {
+      mode: "only",
+      actorTypes: [ENTRY_TYPE.PILOT],
+    },
   },
   attack: {
     id: "weapons",
@@ -79,6 +73,10 @@ const Groups = {
     label: "Attacks",
     icon: "cci cci-weapon",
     type: "submenu",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
   invade: {
     id: "invade",
@@ -86,6 +84,10 @@ const Groups = {
     label: "Invade",
     icon: "cci cci-role-controller",
     type: "submenu",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
   tech: {
     id: "techs",
@@ -93,6 +95,10 @@ const Groups = {
     label: "Other Actions",
     icon: "cci cci-role-support",
     type: "submenu",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
   utility: {
     id: "utility",
@@ -107,23 +113,23 @@ const Groups = {
     label: "Start Turn",
     icon: "cci cci-activate",
     type: "system",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
   recallDeployable: {
     id: "recall-deployable",
     systemId: "recall-deployable",
     label: "Recall",
-    // Needs a better icon I thinks.
     icon: "cci cci-activate",
     type: "system",
+    visibility: {
+      mode: "only",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
   },
-  status: {
-    id: "apply-statuses",
-    label: "Status And Conditions",
-    systemId: "statuses-and-conditions",
-    icon: "cci ",
-    type: "submenu",
-  },
-} satisfies Record<string, ActionMenuCategory>;
+} satisfies Record<string, LayoutConfig>;
 type ActionMap = Record<string, SubMenuItem>;
 
 // In order to favorite, all non-item ids will need to start with macro-
@@ -268,13 +274,6 @@ const CompconFLow = (actor: LancerActor) => {
   } as const satisfies SubMenuData;
 };
 
-const actionCategoriesByType: Record<SheetTypes, ActionMenuCategory[]> = {
-  deployable: [Groups.recallDeployable],
-  mech: [Groups.compconFlow, Groups.attack, Groups.invade, Groups.tech, Groups.utility],
-  npc: [Groups.compconFlow],
-  pilot: [Groups.skills],
-};
-
 /**
  * Hits an embedde activation in the system item.
  * @param actor
@@ -367,9 +366,9 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       });
     }
 
-    override updateAttribute(actor: LancerActor, path: string, input: string) {
+    /*    override updateAttribute(actor: LancerActor, path: string, input: string) {
       return super.updateAttribute(actor, path, input);
-    }
+    }*/
 
     override getConditions(actor: LancerActor) {
       return (actor.temporaryEffects || [])
@@ -464,30 +463,29 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       }
     }
 
-    getCoreLancerActions(actor: LancerActor): ActionMenuCategory[] {
-      const cats = actionCategoriesByType[actor.type];
-      return cats ?? [{ id: "sheet", label: "Sheet", icon: "fa-solid fa-id-card", type: "sheet" }];
-    }
-
     override getActionCategories(actor: LancerActor): ActionMenuCategory[] {
-      let customized = super.getActionCategories(actor);
-      const basicActions = this.getCoreLancerActions(actor).map((a, idx) => {
-        if (a.type == "submenu") {
-          a.id = `${a.id}-${idx}`;
-        }
-        return a;
-      });
+      let core = super.getActionCategories(actor);
+      // Put activate on, if you got activations.
       const combatant = getCombatant(actor);
       if (combatant?.activations.value > 0) {
-        basicActions.push(Groups.activate);
+        core.push(Groups.activate);
       }
-      if (customized?.length > 0) {
-        basicActions.push(...customized);
-      }
-      return basicActions;
+      return core;
     }
 
-    override _getSystemSubMenuData(
+    // Dramatically simplified from core stylish hud.
+    override getSubMenuData(actor: LancerActor, categoryId: string) {
+      const categories = this.getActionCategories(actor);
+      const category = categories.find((entry) => entry.id === categoryId);
+
+      if (!category?.systemId) {
+        return { title: "", items: [] };
+      }
+
+      return this._getSystemSubMenuData(actor, category.systemId, category);
+    }
+
+    _getSystemSubMenuData(
       actor: LancerActor,
       systemId: string,
       menuData: ActionMenuCategory,
@@ -548,17 +546,76 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return base;
     }
 
+    //Can we put skilsl/bonds here?
     _buildUtility(actor: LancerActor): _SubMenuData {
+      const categories: SubMenuData["subTabLabels"] = {
+        macro: { label: game.i18n.localize("IBHUD.Dnd5e.Macros") },
+        misc: {
+          label: "Misc",
+        },
+        betweenCombat: {
+          label: "Between Combat.",
+        },
+      };
+      const items: SidebarSubMenuItems = {
+        macro: { all: [] },
+        misc: {
+          all: [actions.stabilize, ...(actor.is_mech() ? [overcharge(actor)] : [])],
+        },
+        betweenCombat: {
+          all: [missionRest],
+        },
+      };
+      // @ts-ignore
+      const macroIds: string[] = actor.getFlag("stylish-action-hud", "macros") || [];
+      if (macroIds.length > 0) {
+        macroIds.forEach((id) => {
+          const macro = game.macros.get(id);
+          if (macro) {
+            items["macro"]["all"].push({
+              id: `macro-${macro.id}`,
+              name: macro.name,
+              img: macro.img,
+              cost: "",
+              // 우클릭 설명 현지화
+              description: game.i18n.localize("IBHUD.UI.RightClickRemove"),
+            });
+          }
+        });
+      } else {
+        // 매크로가 하나도 없으면 안내 아이템 추가
+        items["macro"]["all"].push({
+          id: "macro-help", // 클릭해도 아무 일 안 일어남 (useItem에서 무시됨)
+          name: game.i18n.localize("IBHUD.UI.DragMacrosHere"), // "매크로를 이곳에 드래그"
+          img: "icons/svg/down.svg", // 화살표 아이콘
+          cost: "",
+          description: "Drag & Drop macros from the hotbar to the Action Menu.",
+          isHeader: false, // 헤더는 아니지만 클릭은 안 됨
+          favoritable: false,
+        });
+      }
+      const primaryLabels = Object.keys(categories).reduce((acc, key) => {
+        if (key === "macro" && items["macro"]["all"].length === 0) return acc;
+        acc[key] = categories[key].label;
+        return acc;
+      }, {});
+
       return {
-        items: [
-          actions.stabilize,
-          ...(actor.is_mech() ? [overcharge(actor)] : []),
-          SimpleActionMacros.Deploy_Item,
-          SimpleActionMacros.Skirmish,
-          SimpleActionMacros.Barrage,
-          macroInvade,
-          missionRest,
-        ],
+        //title: game.i18n.localize("IBHUD.Titles.Utility"),
+        hasTabs: true,
+        hasSubTabs: true,
+        items: items,
+        tabLabels: primaryLabels,
+        tabTooltips: primaryLabels,
+        subTabLabels: {
+          macro: { all: "Macro" },
+          misc: {
+            all: "Miscel",
+          },
+          betweenCombat: {
+            all: "Between Combat",
+          },
+        },
       };
     }
 
@@ -688,6 +745,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           }
           k.push(at.subMenuItem);
         });
+      keyItems.Quick.push(SimpleActionMacros.Deploy_Item);
       // No nice collections way of doing this :(
       // Remove our empties and add in a headers splitter.
       for (const key of Object.keys(keyItems)) {
@@ -778,6 +836,10 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     getTrackableAttributes(actor: LancerActor): TrackableAttribute[] {
       const type = actor.type;
       return attributeLooks[type];
+    }
+
+    override getDefaultLayout(): LayoutConfig[] {
+      return Object.values(Groups);
     }
   }
 
