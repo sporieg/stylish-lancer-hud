@@ -5,40 +5,6 @@ import { ENTRY_TYPE, SheetTypes } from "../ActivationType.js";
  * Its okay to have static values as long as they are not specific actor dependant,
  * which none are in lancer imo.
  */
-let pilot: TrackableAttribute[] = [
-  {
-    path: "system.bond_state.xp.value",
-    label: "Xp",
-  },
-  {
-    path: "system.bond_state.stress.value",
-    label: "Stress",
-  },
-  {
-    path: "system.hp.value",
-    label: "Hp",
-  },
-  {
-    path: "system.callsign",
-    label: "Call Sign",
-  },
-  {
-    path: "system.background",
-    label: "Background",
-  },
-  {
-    path: "system.level",
-    label: "Level",
-  },
-  {
-    path: "name",
-    label: "Name",
-  },
-  {
-    path: "system.active_mech.value.name",
-    label: "Role",
-  },
-];
 
 const npc: TrackableAttribute[] = [
   {
@@ -136,7 +102,51 @@ const mech: TrackableAttribute[] = [
     path: "system.sys",
     label: "Systems",
   },
+  {
+    label: "Name",
+    path: "name",
+  },
 ];
+
+let pilot: TrackableAttribute[] = [
+  {
+    path: "system.bond_state.xp.value",
+    label: "Xp",
+  },
+  {
+    path: "system.bond_state.stress.value",
+    label: "Stress",
+  },
+  {
+    path: "system.hp.value",
+    label: "Hp",
+  },
+  {
+    path: "system.callsign",
+    label: "Call Sign",
+  },
+  {
+    path: "system.background",
+    label: "Background",
+  },
+  {
+    path: "system.level",
+    label: "Level",
+  },
+  {
+    path: "name",
+    label: "Name",
+  },
+  {
+    path: "system.active_mech.value.name",
+    label: "Role",
+  },
+].concat(
+  mech.map((at) => ({
+    label: `Mech ${at.label}`,
+    path: `system.active_mech.value.${at.path}`,
+  })),
+);
 
 const lookup: Record<SheetTypes, TrackableAttribute[]> = {
   [ENTRY_TYPE.MECH]: mech,
