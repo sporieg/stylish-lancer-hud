@@ -44,9 +44,20 @@ let missionRest: SubMenuActionItem = {
   description: "Repair between combat",
 };
 
+type SuperCategory = LayoutConfig & Omit<ActionMenuCategory, "id">;
+
 const Groups = {
+  activate: {
+    systemId: "activate-player",
+    label: "Start Turn",
+    icon: "cci cci-activate",
+    type: "system",
+    visibility: {
+      mode: "except",
+      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
+    },
+  },
   compconFlow: {
-    id: "compcon",
     systemId: "compcon",
     label: "Turn Flow",
     icon: "cci cci-activate",
@@ -57,7 +68,6 @@ const Groups = {
     },
   },
   skills: {
-    id: "skills",
     systemId: "pilot-skills",
     label: "Skills",
     icon: "cci cci-skill",
@@ -68,7 +78,6 @@ const Groups = {
     },
   },
   attack: {
-    id: "weapons",
     systemId: "weapons",
     label: "Attacks",
     icon: "cci cci-weapon",
@@ -79,7 +88,6 @@ const Groups = {
     },
   },
   invade: {
-    id: "invade",
     systemId: "invade-systems",
     label: "Invade",
     icon: "cci cci-role-controller",
@@ -90,7 +98,6 @@ const Groups = {
     },
   },
   tech: {
-    id: "techs",
     systemId: "tech-systems",
     label: "Other Actions",
     icon: "cci cci-role-support",
@@ -101,25 +108,12 @@ const Groups = {
     },
   },
   utility: {
-    id: "utility",
     systemId: "utility-systems",
     label: "Utility",
     icon: "cci cci-mech-system",
     type: "submenu",
   },
-  activate: {
-    id: "activate",
-    systemId: "activate-player",
-    label: "Start Turn",
-    icon: "cci cci-activate",
-    type: "system",
-    visibility: {
-      mode: "except",
-      actorTypes: [ENTRY_TYPE.DEPLOYABLE],
-    },
-  },
   recallDeployable: {
-    id: "recall-deployable",
     systemId: "recall-deployable",
     label: "Recall",
     icon: "cci cci-activate",
@@ -129,7 +123,7 @@ const Groups = {
       actorTypes: [ENTRY_TYPE.DEPLOYABLE],
     },
   },
-} satisfies Record<string, LayoutConfig>;
+} satisfies Record<string, SuperCategory>;
 type ActionMap = Record<string, SubMenuItem>;
 
 // In order to favorite, all non-item ids will need to start with macro-
@@ -194,6 +188,22 @@ function overcharge(actor: LancerMECH): SubMenuItem {
   };
 }
 
+function _isCategoryVisible(visibility: CategoryVisibility, actor: LancerActor) {
+  if (!visibility || !visibility.mode || visibility.mode === "all") return true;
+  if (!actor) return true;
+
+  const actorType = actor.type;
+  const actorId = actor.id;
+  const types = visibility.actorTypes || [];
+  const ids = visibility.actorIds || [];
+
+  const isMatched = types.includes(actorType) || ids.includes(actorId);
+
+  if (visibility.mode === "only") return isMatched;
+  if (visibility.mode === "except") return !isMatched;
+
+  return true;
+}
 /**
  * Use a function to always create a new set of actions each time.
  * @constructor
@@ -452,11 +462,11 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
 
     override async executeAction(actor: LancerActor, actionId: string) {
       switch (actionId) {
-        case Groups.activate.id:
+        case Groups.activate.systemId:
           const combatant = getCombatant(actor);
           // @ts-ignore
           return await game.combat.activateCombatant(combatant.id);
-        case Groups.recallDeployable.id:
+        case Groups.recallDeployable.systemId:
           const tokenA = actor.token;
           // This kills the crab
           return tokenA.delete();
@@ -464,12 +474,20 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
     }
 
     override getActionCategories(actor: LancerActor): ActionMenuCategory[] {
-      let core = super.getActionCategories(actor);
-      // Put activate on, if you got activations.
-      const combatant = getCombatant(actor);
-      if (combatant?.activations.value > 0) {
-        core.push(Groups.activate);
-      }
+      let core = this.getDefaultLayout()
+        .filter((a) => _isCategoryVisible(a.visibility, actor))
+        .filter((a) => {
+          // Leave activate on, if you got activations.
+          const combatant = getCombatant(actor);
+          return a.systemId !== Groups.activate.systemId || combatant?.activations.value > 0;
+        })
+        .map<ActionMenuCategory>((cat, index) => ({
+          id: `menu-${index}`,
+          systemId: cat.systemId,
+          label: cat.label,
+          icon: cat.icon,
+          type: cat.type,
+        }));
       return core;
     }
 
@@ -838,7 +856,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return attributeLooks[type];
     }
 
-    override getDefaultLayout(): LayoutConfig[] {
+    override getDefaultLayout(): SuperCategory[] {
       return Object.values(Groups);
     }
   }
