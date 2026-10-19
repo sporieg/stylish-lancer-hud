@@ -23,10 +23,11 @@ export function playerActors(): (LancerPILOT | LancerMECH)[] {
   // @ts-expect-error
   return game.actors.filter((a: LancerActor) => a.is_mech() || a.is_pilot());
 }
+
 export function getCombatant(actor: LancerActor): LancerCombatant | null {
   const tokens = canvas.tokens.controlled.filter((t) => t.actor?.id === actor.id);
   if (tokens.length != 1) {
-    ui.notifications?.warn("You must have one token selected to use this action.");
+    //ui.notifications?.warn("You must have one token selected to use this action.");
     return null;
   }
   const token = tokens[0];
@@ -34,4 +35,34 @@ export function getCombatant(actor: LancerActor): LancerCombatant | null {
     return token.combatant as unknown as LancerCombatant;
   }
   return null;
+}
+
+// Native equiv for lodash get.
+export const get = (obj, path, defaultValue = undefined) => {
+  const travel = (regexp) =>
+    String.prototype.split
+      .call(path, regexp)
+      .filter(Boolean)
+      .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
+  const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
+  return result === undefined || result === obj ? defaultValue : result;
+};
+
+/**
+ * When you need to mutate every subitem, regardless of its location in an Array, Record, or Record<Record>
+ * @param items
+ * @param mutate
+ */
+export function visitSubMenuItems(
+  items: FlatSubMenuItems | TabbedSubMenuItems | SidebarSubMenuItems,
+  mutate: (item: SubMenuItem) => void,
+) {
+  function visit(valu: SubMenuItem[] | TabbedSubMenuItems | SidebarSubMenuItems) {
+    if (Array.isArray(valu)) {
+      valu.forEach(mutate);
+    } else {
+      Object.values(valu).forEach(visit);
+    }
+  }
+  return visit(items);
 }

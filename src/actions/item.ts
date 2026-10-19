@@ -2,7 +2,7 @@
  * This file contains the helper methods to deal with pathing to/from items with activations.
  */
 import { LancerActor } from "foundryvtt-lancer/actor/lancer-actor";
-import { pilotForMech } from "./adapters/helpers.js";
+import { pilotForMech } from "../adapters/helpers.js";
 import { LancerItem } from "foundryvtt-lancer/item/lancer-item";
 
 type IndexedPath = `system.traits.${number}.actions.${number}`;
@@ -48,4 +48,23 @@ export function getItem(actor: LancerActor, actionId: string): [LancerItem, stri
     return getItem(pilotForMech(actor), actionId);
   }
   return [item, dataPath];
+}
+
+/**
+ * Hits an embedde activation in the system item.
+ * @param actor
+ * @param actionId
+ */
+export function activateSystem(actor: LancerActor, actionId: string) {
+  const [item, dataPath] = getItem(actor, actionId);
+  if (!item) {
+    ui.notifications?.warn(`Item not found: ${actionId}`);
+    return;
+  }
+  return item.beginActivationFlow(dataPath);
+}
+
+export function activateCoreSystem(actor: LancerActor, actionId: string) {
+  const [item, dataPath] = getItem(actor, actionId);
+  return item.beginCoreActiveFlow(dataPath);
 }

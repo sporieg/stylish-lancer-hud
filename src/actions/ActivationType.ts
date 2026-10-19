@@ -1,4 +1,4 @@
-import { LancerActor, type LancerMECH } from "foundryvtt-lancer/actor/lancer-actor";
+import { LancerActor, type LancerMECH, LancerPILOT } from "foundryvtt-lancer/actor/lancer-actor";
 import { ActionData } from "foundryvtt-lancer/models/bits/action";
 import {
   LancerBOND,
@@ -6,11 +6,12 @@ import {
   LancerItem,
   LancerMECH_SYSTEM,
   LancerMECH_WEAPON,
+  LancerTALENT,
   LancerWEAPON_MOD,
 } from "foundryvtt-lancer/item/lancer-item";
-import { imgs } from "./Images.js";
-import { logInvalidItem } from "./log.js";
-import { itemActionId, itemActionPath } from "./ActivatedItem.js";
+import { imgs } from "../images.js";
+import { logInvalidItem } from "../log.js";
+import { itemActionId, itemActionPath } from "./item.js";
 import type {
   EntryType,
   RangeType,
@@ -352,10 +353,15 @@ export function bondSubMenuData(bond: LancerBOND): SubMenuItem[] {
       };
     });
 }
-
-function formatName(item: LancerItem) {
-  const usable = isUsableItem(item);
-}
+/*{
+  "default_value": 0,
+  "value": 2,
+  "lid": "ctr_duelist",
+  "max": 3,
+  "min": 0,
+  "name": "Blademaster Dice",
+  "initialized": 0
+}*/
 
 /**
  * Slice up the loadout into something flatter and easier to work with for a menu.

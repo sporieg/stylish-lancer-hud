@@ -1,4 +1,4 @@
-import { ENTRY_TYPE, SheetTypes } from "../ActivationType.js";
+import { ENTRY_TYPE, SheetTypes } from "../actions/ActivationType.js";
 
 /**
  * Static path lookups for the different classes of Actor.
@@ -114,12 +114,12 @@ let pilot: TrackableAttribute[] = [
     label: "Xp",
   },
   {
-    path: "system.bond_state.stress.value",
-    label: "Stress",
+    path: "system.bond.name",
+    label: "Bond",
   },
   {
-    path: "system.hp.value",
-    label: "Hp",
+    path: "system.bond_state.minor_ideal",
+    label: "Minor Ideal",
   },
   {
     path: "system.callsign",
@@ -136,6 +136,14 @@ let pilot: TrackableAttribute[] = [
   {
     path: "name",
     label: "Name",
+  },
+  {
+    path: "system.bond_state.stress.value",
+    label: "Stress",
+  },
+  {
+    path: "system.hp.value",
+    label: "Hp",
   },
   {
     path: "system.active_mech.value.name",

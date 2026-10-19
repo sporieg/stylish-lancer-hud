@@ -7,10 +7,9 @@ import {
 import { LancerItem, LancerSKILL } from "foundryvtt-lancer/item/lancer-item";
 import type { ActionData } from "foundryvtt-lancer/models/bits/action";
 import { debug } from "./log.js";
-import { imgs } from "./Images.js";
+import { imgs } from "./images.js";
 import {
   ActionItem,
-  ACTIVATION_TAG_MAP,
   ActivationLabels,
   ActivationTypeIcon,
   ActivationTypeValue,
@@ -20,31 +19,15 @@ import {
   itemSubMenuData,
   RemapAction,
   weaponsByMount,
-} from "./ActivationType.js";
-import { SimpleActionMacros } from "./SimpleActions.js";
-import { getCombatant, pilotForMech } from "./adapters/helpers.js";
-import { getItem } from "./ActivatedItem.js";
+} from "./actions/ActivationType.js";
+import { SimpleActionMacros } from "./actions/macro.js";
+import { get, getCombatant, pilotForMech, visitSubMenuItems } from "./adapters/helpers.js";
+import { activateCoreSystem, activateSystem, getItem } from "./actions/item.js";
 import attributeLooks from "./adapters/attributes.js";
 
 const isInvade = (a: Pick<ActionData, "activation">) => a.activation === "Invade";
 
 // Lancer icons at: https://github.com/massif-press/compcon/blob/master/src/assets/glyphs/glyphs.css
-let macroInvade: SubMenuActionItem = {
-  id: "macro-o3nZI3EidYMVc9UX",
-  name: "Invasion Flow",
-  img: imgs.lancer.tech_quick,
-  cost: ActivationTypeIcon.QuickTech + ActivationTypeIcon.FullTech,
-  description: "Trigger the invasion flow chart",
-};
-
-let missionRest: SubMenuActionItem = {
-  id: "macro-MiJ9OGiYsgtHulQQ",
-  name: "Rest",
-  img: imgs.lancer.repair,
-  cost: "Between Combat",
-  description: "Repair between combat",
-};
-
 type SuperCategory = LayoutConfig & Omit<ActionMenuCategory, "id">;
 
 const Groups = {
@@ -108,12 +91,12 @@ const Groups = {
       actorTypes: [ENTRY_TYPE.DEPLOYABLE],
     },
   },
-  utility: {
+  /*utility: {
     systemId: "utility-systems",
     label: "Utility",
     icon: "cci cci-mech-system",
     type: "submenu",
-  },
+  },*/
   recallDeployable: {
     systemId: "recall-deployable",
     label: "Recall",
@@ -130,13 +113,6 @@ type ActionMap = Record<string, SubMenuItem>;
 // In order to favorite, all non-item ids will need to start with macro-
 // Basic routing, by using the id and starts with you can id thing that map to the same aciton, e.g. basic-attack/basic-attack-ram
 const actions = {
-  stabilize: {
-    id: "macro-k4o9aWoJTVb2sd8a",
-    name: `Stabilize`,
-    cost: ActivationTypeIcon.Full,
-    img: imgs.lancer.marker,
-    description: `When you STABILIZE, you enact emergency protocols to purge your mech’s systems of excess heat, repair your chassis where you can, or eliminate hostile code.`,
-  },
   overcharge: {
     id: "overcharge",
     name: "Overcharge",
@@ -158,20 +134,6 @@ const actions = {
     cost: ActivationTypeIcon.Quick,
     img: imgs.la.underhand,
     description: "Just roll to hit, useful for grapple and the likes.",
-  },
-  basic_ram: {
-    id: "basic-attack-ram",
-    name: `Ram Attack`,
-    cost: ActivationTypeIcon.Quick,
-    img: imgs.la.ram,
-    description: "Melee attack to ram your enemy",
-  },
-  basic_grapple: {
-    id: "basic-attack-ram",
-    name: `Grapple Attack`,
-    img: imgs.la.grappling,
-    cost: ActivationTypeIcon.Quick,
-    description: "Melee attack to grapple your enemy",
   },
 } satisfies ActionMap;
 
@@ -214,7 +176,7 @@ const FlowItems = () => ({
     protocol: [] as SubMenuItem[],
     quick: [
       SimpleActionMacros.Skirmish,
-      macroInvade,
+      SimpleActionMacros.Invade_Proper,
       SimpleActionMacros.Deploy_Item,
       SimpleActionMacros.Lock_On,
       SimpleActionMacros.Hide,
@@ -223,13 +185,13 @@ const FlowItems = () => ({
       SimpleActionMacros.Bolster,
       SimpleActionMacros.Eject,
       actions.basic_attack,
-      actions.basic_ram,
-      actions.basic_grapple,
+      SimpleActionMacros.Ram,
+      SimpleActionMacros.Grapple_Choice,
     ],
     full: [
       SimpleActionMacros.Barrage,
       SimpleActionMacros.Disengage,
-      actions.stabilize,
+      SimpleActionMacros.Stabilize,
       SimpleActionMacros.Dismount,
       actions.improvised_attack,
       SimpleActionMacros.Boot_Up,
@@ -241,19 +203,19 @@ const FlowItems = () => ({
     protocol: [] as SubMenuItem[],
     quick: [
       SimpleActionMacros.Skirmish,
-      macroInvade,
+      SimpleActionMacros.Invade_Proper,
       SimpleActionMacros.Deploy_Item,
       SimpleActionMacros.Lock_On,
       SimpleActionMacros.Hide,
       SimpleActionMacros.Search,
       actions.basic_attack,
-      actions.basic_ram,
-      actions.basic_grapple,
+      SimpleActionMacros.Ram,
+      SimpleActionMacros.Grapple_Choice,
     ],
     full: [
       SimpleActionMacros.Barrage,
       SimpleActionMacros.Disengage,
-      actions.stabilize,
+      SimpleActionMacros.Stabilize,
       actions.improvised_attack,
       SimpleActionMacros.Boot_Up,
     ],
@@ -285,25 +247,6 @@ const CompconFLow = (actor: LancerActor) => {
   } as const satisfies SubMenuData;
 };
 
-/**
- * Hits an embedde activation in the system item.
- * @param actor
- * @param actionId
- */
-function activateSystem(actor: LancerActor, actionId: string) {
-  const [item, dataPath] = getItem(actor, actionId);
-  if (!item) {
-    ui.notifications?.warn(`Item not found: ${actionId}`);
-    return;
-  }
-  return item.beginActivationFlow(dataPath);
-}
-
-function activateCoreSystem(actor: LancerActor, actionId: string) {
-  const [item, dataPath] = getItem(actor, actionId);
-  return item.beginCoreActiveFlow(dataPath);
-}
-
 type _SubMenuData = {
   theme?: string;
   hasTabs?: boolean;
@@ -317,27 +260,11 @@ type _SubMenuData = {
 function fixupSmItems(sm: SubMenuData): SubMenuData {
   // Sub Men Items that are macros have a hidden property, globalFlavor.  Set that here from the description
   // to bring back a useful tooltip;
-  let items = sm.items;
-  // Its all side effects, might be cleaner to just visit the items instead, oh well.
-  if (!Array.isArray(items)) {
-    items = Object.values(items).flatMap((x) => x);
-  }
-  items.forEach((i) => {
+  visitSubMenuItems(sm.items, (i) => {
     i.globalFlavor = i.description;
   });
   return sm;
 }
-
-// Native equiv for lodash get.
-const get = (obj, path, defaultValue = undefined) => {
-  const travel = (regexp) =>
-    String.prototype.split
-      .call(path, regexp)
-      .filter(Boolean)
-      .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
-  const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
-  return result === undefined || result === obj ? defaultValue : result;
-};
 
 function byActionType(...activationType: ActivationTypeValue[]) {
   return (a: ActionItem): [SubMenuHeaderItem, ...SubMenuActionItem[]] | [] => {
@@ -391,7 +318,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         const macroId = itemId.replace("macro-", "");
         // @ts-ignore
         const existingMacros: string[] = actor.getFlag("stylish-action-hud", "macros") || [];
-        const exists = existingMacros.find((id) => id !== macroId);
+        const exists = existingMacros.find((id) => id === macroId);
         // You know I really should check if the macro exists and something the player dropepd on.
         if (exists) {
           // @ts-ignore
@@ -418,26 +345,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
             path: "system.uses.value",
             isSpent: false,
           };
-        } /*
-        if(item.isLoading() && item.is_mech_weapon()) {
-          return {
-            itemId: item.id,
-            isItem: true,
-            itemName: item.name,
-            label: "Loaded",
-            //max: 1,
-            //value: item.system.loaded ? 1 : 0,
-            isSpent: !item.system.loaded,
-            path: "system.loaded"
-          }
         }
-        return {
-          itemName: item.name,
-          lebel: "Just a man",
-          itemId: item.id,
-          isItem: false,
-          isSpent: false
-        }*/
         return null; //What should even happy when you set the value of Hacker 1 to 7?
       }
       return null;
@@ -463,10 +371,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return null;
     }
 
-    isEditable(path: string) {
-      return /^system\.(hp|heat|stress|)/.test(path);
-    }
-
     override isStatRollable(path: string) {
       return /^system\.(hull|agi|sys|eng|grit)$/.test(path);
     }
@@ -485,7 +389,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       if (embeddedItemAction) {
         return {
           name: activ?.name ?? embeddedItemAction.name,
-          // I want the action name, imm,
           img: embeddedItemAction.img,
         };
       }
@@ -598,12 +501,18 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         menu = this._buildInvades(actor);
       } else if (systemId === Groups.tech.systemId) {
         menu = this._buildTechActivations(actor);
-      } else if (systemId === Groups.utility.systemId) {
-        menu = this._buildUtility(actor);
-      } else if (systemId === Groups.compconFlow.systemId && (actor.is_mech() || actor.is_npc())) {
+      } else if (
+        systemId === Groups.compconFlow.systemId &&
+        (actor.is_mech() || actor.is_npc() || actor.is_pilot())
+      ) {
         menu = this._buildCompconFlow(actor);
       } else if (systemId === Groups.skills.systemId && actor.is_pilot()) {
-        menu = this._buildSkills(actor);
+        if (actor.is_pilot()) {
+          menu = this._buildSkills(actor);
+        }
+        if (actor.is_mech()) {
+          menu = this._buildSkills(pilotForMech(actor));
+        }
       }
 
       return fixupSmItems({
@@ -612,7 +521,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       });
     }
 
-    _buildCompconFlow(actor: LancerMECH | LancerNPC) {
+    _buildCompconFlow(actor: LancerMECH | LancerNPC | LancerPILOT) {
       const base = CompconFLow(actor);
       const { protocol, quick, full, free, reactions } = base.items;
       let mechActionItems = getActorActionItems(actor);
@@ -647,93 +556,18 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       return base;
     }
 
-    //Can we put skilsl/bonds here?
-    _buildUtility(actor: LancerActor): _SubMenuData {
-      const categories: SubMenuData["subTabLabels"] = {
-        macro: { label: game.i18n.localize("IBHUD.Dnd5e.Macros") },
-        misc: {
-          label: "Misc",
-        },
-        betweenCombat: {
-          label: "Between Combat.",
-        },
-      };
-      const items: SidebarSubMenuItems = {
-        macro: { all: [] },
-        misc: {
-          all: [actions.stabilize, ...(actor.is_mech() ? [overcharge(actor)] : [])],
-        },
-        betweenCombat: {
-          all: [missionRest],
-        },
-      };
-      // @ts-ignore
-      const macroIds: string[] = actor.getFlag("stylish-action-hud", "macros") || [];
-      if (macroIds.length > 0) {
-        macroIds.forEach((id) => {
-          const macro = game.macros.get(id);
-          if (macro) {
-            items["macro"]["all"].push({
-              id: `macro-${macro.id}`,
-              name: macro.name,
-              img: macro.img,
-              //isPersonal: true,
-              //customCatIndex: 0,
-              cost: "",
-              description: game.i18n.localize("IBHUD.UI.RightClickRemove"),
-            });
-          }
-        });
-      } else {
-        // 매크로가 하나도 없으면 안내 아이템 추가
-        items["macro"]["all"].push({
-          id: "macro-help", // 클릭해도 아무 일 안 일어남 (useItem에서 무시됨)
-          name: game.i18n.localize("IBHUD.UI.DragMacrosHere"), // "매크로를 이곳에 드래그"
-          img: "icons/svg/down.svg", // 화살표 아이콘
-          cost: "",
-          description: "Drag & Drop macros from the hotbar to the Action Menu.",
-          isHeader: false, // 헤더는 아니지만 클릭은 안 됨
-          favoritable: false,
-        });
-      }
-      const primaryLabels = Object.keys(categories).reduce((acc, key) => {
-        if (key === "macro" && items["macro"]["all"].length === 0) return acc;
-        acc[key] = categories[key].label;
-        return acc;
-      }, {});
-
-      return {
-        //title: game.i18n.localize("IBHUD.Titles.Utility"),
-        hasTabs: true,
-        hasSubTabs: true,
-        items: items,
-        tabLabels: primaryLabels,
-        tabTooltips: primaryLabels,
-        subTabLabels: {
-          macro: { all: "Macro" },
-          misc: {
-            all: "Miscel",
-          },
-          betweenCombat: {
-            all: "Between Combat",
-          },
-        },
-      };
-    }
-
     _buildSkills(actor: LancerPILOT): _SubMenuData {
       const skills = actor.items
         .map((x) => x as LancerItem)
         .filter((i): i is LancerSKILL => i.is_skill());
       const bond = actor.system.bond;
-      const bondPowers = bondSubMenuData(bond);
-      let skillItems = [
-        {
-          id: "",
-          isHeader: true,
-          name: "Skills",
-        },
-        ...skills.map((skill: LancerSKILL) => {
+      let tabLabels = {
+        skill: "Skills",
+        bond: "Bonds",
+      };
+      let items = {
+        bond: bondSubMenuData(bond),
+        skill: skills.map((skill: LancerSKILL) => {
           const s = skill.system;
           return {
             ...itemSubMenuData(skill),
@@ -741,21 +575,11 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
             description: s.description,
           };
         }),
-      ];
-      let bondItems = [
-        ...(bondPowers.length > 0
-          ? [
-              {
-                id: "",
-                isHeader: true,
-                name: "Bond Powers",
-              },
-            ]
-          : []),
-        ...bondPowers,
-      ];
+      };
       return {
-        items: [...bondItems, ...skillItems],
+        hasTabs: true,
+        tabLabels,
+        items,
       };
     }
 
@@ -774,8 +598,8 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
             name: "Basic Attacks",
           } as SubMenuHeaderItem,
           actions.basic_attack,
-          actions.basic_ram,
-          actions.basic_grapple,
+          SimpleActionMacros.Ram,
+          SimpleActionMacros.Grapple_Choice,
         ],
         mounts: weaponItems,
       };
@@ -787,7 +611,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       };
     }
 
-    _buildInvades(actor: LancerMECH): SubMenuData {
+    _buildInvades(actor: LancerMECH): _SubMenuData {
       const invades = [...getActorActionItems(actor), ...getActorActionItems(pilotForMech(actor))]
         .map((ai) => ({
           item: ai.item,
@@ -802,11 +626,10 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
           ...ai.actions.map((a) => a.subMenuItem),
         ]);
       const items: TabbedSubMenuItems = {
-        flow: [macroInvade, SimpleActionMacros.Fragment_Signal],
+        flow: [SimpleActionMacros.Invade_Proper, SimpleActionMacros.Fragment_Signal],
         full: [SimpleActionMacros.Fragment_Signal, ...invades],
       };
       return {
-        title: "Invade Options",
         hasTabs: true,
         tabLabels: {
           flow: "Invade Flow",
@@ -816,7 +639,7 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
       };
     }
 
-    _buildTechActivations(actor: LancerActor): SubMenuData {
+    _buildTechActivations(actor: LancerActor): _SubMenuData {
       // ToDO: We should also add the item as a header for each action/pair of actins.
       const keyItems: Record<keyof typeof ActivationLabels, SubMenuItem[]> = Object.fromEntries(
         Object.keys(ActivationLabels).map((k) => [k, []]),
@@ -858,7 +681,6 @@ Hooks.once("stylish-action-hud.apiReady", (api: StylishActionHudAPI) => {
         }
       }
       return {
-        title: "Systems",
         tabLabels,
         items: keyItems,
         hasTabs: true,

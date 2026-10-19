@@ -1,5 +1,5 @@
 import { ActivationTypeIcon } from "./ActivationType.js";
-import { imgs } from "./Images.js";
+import { imgs } from "../images.js";
 
 export const SimpleActionMacros = {
   Reactor_Explosion: {
@@ -37,6 +37,14 @@ export const SimpleActionMacros = {
     img: "systems/lancer/assets/icons/white/tech_quick.svg",
     cost: ActivationTypeIcon.None,
     description: "",
+  },
+  Invade_Proper: {
+    //Follow the lancer order of invade then pick your option instead of option first.
+    id: "macro-o3nZI3EidYMVc9UX",
+    name: "Invasion Flow",
+    img: imgs.lancer.tech_quick,
+    cost: ActivationTypeIcon.QuickTech + ActivationTypeIcon.FullTech,
+    description: "Trigger the invasion flow chart",
   },
   Knockback: {
     id: "macro-FIvBse85JC29PuD2",
@@ -200,7 +208,7 @@ export const SimpleActionMacros = {
   Brace: {
     id: "macro-fphucClJxHblW9ww",
     name: "Brace",
-    cost: '<i class="cci cci-reaction" style="font-size:1.15em;margin-right:5px;vertical-align:middle;flex-shrink:0;"></i>',
+    cost: ActivationTypeIcon.Reaction,
     description:
       "You count as having RESISTANCE to all damage, burn, and heat from the triggering attack, and until the end of your next turn, all other attacks against you are made at +1 difficulty. Due to the stress of bracing, you cannot take reactions until the end of your next turn and on that turn, you can only take one quick action – you cannot OVERCHARGE, move normally, take full actions, or take free actions.",
     img: imgs.la["brace"],
@@ -245,9 +253,16 @@ export const SimpleActionMacros = {
   },
   Grapple_Choice: {
     id: "macro-vHeXwtAP3DwOA144",
-    name: "Grapple_Choice",
+    name: "Grapple Flow",
     img: imgs.la["grappling"],
-    cost: ActivationTypeIcon.None,
+    cost: ActivationTypeIcon.Quick,
     description: "",
+  },
+  Stabilize: {
+    id: "macro-k4o9aWoJTVb2sd8a",
+    name: `Stabilize`,
+    cost: ActivationTypeIcon.Full,
+    img: imgs.lancer.marker,
+    description: `When you STABILIZE, you enact emergency protocols to purge your mech’s systems of excess heat, repair your chassis where you can, or eliminate hostile code.`,
   },
 };
