@@ -147,7 +147,7 @@ let pilot: TrackableAttribute[] = [
   },
   {
     path: "system.active_mech.value.name",
-    label: "Role",
+    label: "Active Mech",
   },
 ].concat(
   mech.map((at) => ({

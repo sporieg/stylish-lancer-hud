@@ -20,5 +20,6 @@
 !/tsconfig.json
 !/.icon.png
 !/.oxfmtrc.json
+!/.oxlintrc.json
 !.husky/
 !.husky/**
