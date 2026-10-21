@@ -149,6 +149,10 @@ let pilot: TrackableAttribute[] = [
     path: "system.active_mech.value.name",
     label: "Active Mech",
   },
+  {
+    path: "system.active_mech.value.img",
+    label: "Active Mech Img",
+  },
 ].concat(
   mech.map((at) => ({
     label: `Mech ${at.label}`,
